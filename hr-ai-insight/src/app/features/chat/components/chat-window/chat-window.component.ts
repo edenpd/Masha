@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../../../store/app.store';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { MessageInputComponent } from '../message-input/message-input.component';
@@ -7,7 +7,7 @@ import { MessageInputComponent } from '../message-input/message-input.component'
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [CommonModule, MessageListComponent, MessageInputComponent],
+  imports: [MessageListComponent, MessageInputComponent],
   template: `
     <div class="flex-1 flex flex-col h-full">
       <!-- Messages Area -->

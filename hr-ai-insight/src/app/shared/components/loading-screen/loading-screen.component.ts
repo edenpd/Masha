@@ -1,11 +1,11 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../../store/app.store';
 
 @Component({
   selector: 'app-loading-screen',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="min-h-screen bg-slate-50 dark:bg-deep-900 transition-colors duration-1000 flex flex-col items-center justify-center relative overflow-hidden font-outfit">
       

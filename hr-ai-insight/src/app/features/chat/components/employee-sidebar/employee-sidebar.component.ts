@@ -1,12 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../../../store/app.store';
 import { AuthorizedEmployee } from '../../../../models';
 
 @Component({
   selector: 'app-employee-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="h-full flex flex-col bg-slate-100/50 dark:bg-deep-800/30 backdrop-blur-sm transition-colors duration-300">
       <!-- Header -->

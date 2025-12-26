@@ -1,12 +1,12 @@
 import { Component, inject, signal, ElementRef, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AppStore } from '../../../../store/app.store';
 
 @Component({
   selector: 'app-message-input',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="max-w-4xl mx-auto">
       <form (submit)="onSubmit($event)" class="relative">

@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../store/app.store';
 import { ChatWindowComponent } from './components/chat-window/chat-window.component';
 import { EmployeeSidebarComponent } from './components/employee-sidebar/employee-sidebar.component';
@@ -9,11 +9,10 @@ import { HeaderComponent } from './components/header/header.component';
   selector: 'app-chat-shell',
   standalone: true,
   imports: [
-    CommonModule,
     ChatWindowComponent,
     EmployeeSidebarComponent,
-    HeaderComponent,
-  ],
+    HeaderComponent
+],
   template: `
     <div class="h-screen bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300">
       <!-- Header -->

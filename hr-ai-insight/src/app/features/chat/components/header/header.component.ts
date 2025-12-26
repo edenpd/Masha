@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../../../store/app.store';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <header class="h-16 border-b border-white/5 dark:border-white/5 bg-white/70 dark:bg-deep-800/60 backdrop-blur-xl flex items-center justify-between px-6 transition-colors duration-300">
       <!-- Logo & Title -->

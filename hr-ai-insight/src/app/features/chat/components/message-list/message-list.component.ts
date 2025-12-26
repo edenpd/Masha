@@ -1,12 +1,12 @@
 import { Component, inject, ElementRef, ViewChild, AfterViewChecked, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppStore } from '../../../../store/app.store';
 import { ChatMessage } from '../../../../models';
 
 @Component({
   selector: 'app-message-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div 
       #scrollContainer
