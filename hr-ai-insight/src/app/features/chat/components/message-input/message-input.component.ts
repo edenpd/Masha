@@ -58,7 +58,7 @@ import { AppStore } from '../../../../store/app.store';
                       <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">שאלות לדוגמה</p>
                     </div>
                     <div class="p-2 space-y-1">
-                      @for (suggestion of suggestions; track suggestion) {
+                      @for (suggestion of store.suggestedQuestions(); track suggestion) {
                         <button
                           type="button"
                           (click)="useSuggestion(suggestion)"
@@ -151,16 +151,6 @@ export class MessageInputComponent {
   protected inputValue = signal('');
   protected showSuggestions = signal(false);
 
-  protected suggestions = [
-    'כמה ימי חופש נשארו לדני?',
-    'מה המשכורת של שרה לוי?',
-    'באיזה מחלקה עובד יוסי?',
-    'מתי התחילה מיכל לעבוד?',
-    'כמה ימי מחלה יש לאבי?',
-    'מי המנהל של נועה?',
-    'תן לי פרטים על עמית',
-    'מה דירוג הביצועים של רונית?',
-  ];
 
   protected onSubmit(event: Event): void {
     event.preventDefault();

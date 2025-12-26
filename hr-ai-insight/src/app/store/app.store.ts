@@ -98,6 +98,48 @@ export const AppStore = signalStore(
         ),
     })),
 
+    withComputed((store) => ({
+        suggestedQuestions: computed(() => {
+            const employees = store.authorizedEmployees();
+            if (employees.length === 0) return [
+                'כמה ימי חופש נשארו לי?',
+                'מה המשכורת שלי?',
+                'מי המנהל שלי?'
+            ];
+
+            const getRandom = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
+            const questions: string[] = [];
+
+            // Generate diverse questions
+            if (employees.length > 0) {
+                // 1. Vacation
+                const emp1 = getRandom(employees);
+                questions.push(`כמה ימי חופש יש ל${emp1.name}?`);
+
+                // 2. Salary
+                const emp2 = getRandom(employees);
+                questions.push(`מה המשכורת של ${emp2.name}?`);
+
+                // 3. Role/Dept - Gender aware
+                const emp3 = getRandom(employees);
+                const verbWork = emp3.gender === 2 ? 'עובדת' : 'עובד';
+                questions.push(`באיזה מחלקה ${verbWork} ${emp3.name}?`);
+
+                // 4. Manager
+                const emp4 = getRandom(employees);
+                questions.push(`מי המנהל של ${emp4.name}?`);
+
+                // 5. Seniority - Gender aware
+                const emp5 = getRandom(employees);
+                const verbStart = emp5.gender === 2 ? 'התחילה' : 'התחיל';
+                questions.push(`מתי ${verbStart} ${emp5.name} לעבוד?`);
+            }
+
+            // Ensure unique
+            return [...new Set(questions)].slice(0, 4);
+        })
+    })),
+
     withMethods((store) => {
         // Inject services
         const authService = inject(AuthService);
@@ -195,9 +237,15 @@ export const AppStore = signalStore(
                         ? `שלום ${user.firstName}! 👋\n\nאני העוזר החכם שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`
                         : `שלום ${user.firstName}! 👋\n\nאני העוזרת החכמה שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`;
 
+                    // Generate list of example questions from the computed property
+                    // Accessing computed property in method logic needs to be done carefully or just re-derived if strictly needed,
+                    // but here we can just use the store state directly as we just updated it.
+                    // Actually, computed signals are available on the store object.
+                    const questions = store.suggestedQuestions().slice(0, 3).map(q => `• "${q}"`).join('\n');
+
                     addMessage({
                         type: 'assistant',
-                        content: `${welcomeMsg}\n\nיש לי גישה לנתונים של **${store.authorizedEmployees().length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n• "כמה ימי חופש נשארו לדני?"\n• "מה המשכורת של שרה?"\n• "באיזה מחלקה עובד יוסי?"\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
+                        content: `${welcomeMsg}\n\nיש לי גישה לנתונים של **${store.authorizedEmployees().length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n${questions}\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
                     });
 
                     patchState(store, { appState: 'ready' });

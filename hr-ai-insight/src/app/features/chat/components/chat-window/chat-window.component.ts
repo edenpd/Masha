@@ -20,11 +20,11 @@ import { MessageInputComponent } from '../message-input/message-input.component'
         <app-message-input />
         
         <!-- Hint text -->
-        <div class="text-center mt-3">
+        <!-- <div class="text-center mt-3">
           <p class="text-xs text-gray-500 dark:text-gray-600">
-            💡 נסה לשאול: "כמה ימי חופש נשארו לדני?" או "מה המשכורת של שרה?"
+            💡 נסה לשאול: "{{ store.suggestedQuestions()[0] }}" או "{{ store.suggestedQuestions()[1] }}"
           </p>
-        </div>
+        </div> -->
       </div>
     </div>
   `,
