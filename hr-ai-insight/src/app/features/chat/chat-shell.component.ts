@@ -27,9 +27,11 @@ import { HeaderComponent } from './components/header/header.component';
         </main>
         
         <!-- Sidebar -->
-        <aside class="hidden lg:block w-80 xl:w-96 border-r border-white/5">
-          <app-employee-sidebar />
-        </aside>
+        @if (showSidebar) {
+          <aside class="hidden lg:block w-80 xl:w-96 border-r border-white/5">
+            <app-employee-sidebar />
+          </aside>
+        }
       </div>
     </div>
   `,
@@ -42,4 +44,7 @@ import { HeaderComponent } from './components/header/header.component';
 })
 export class ChatShellComponent {
   protected readonly store = inject(AppStore);
+
+  // Configuration to toggle sidebar visibility
+  protected readonly showSidebar = false;
 }
