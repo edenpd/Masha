@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom, Observable, Subject } from 'rxjs';
-import { AuthorizedEmployee, EmployeeData } from '../../models';
+import { AuthUser, AuthorizedEmployee, EmployeeData } from '../../models';
 import { EmployeeDataService } from './employee-data.service';
 import { environment } from '../../../environments/environment';
 
@@ -36,19 +36,18 @@ export class CohereService {
     /**
      * Generate response using Cohere API with Tool Use
      */
-    generateResponse(query: string, employees: AuthorizedEmployee[]): Observable<string> {
+    generateResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser): Observable<string> {
         const responseSubject = new Subject<string>();
 
         // Initialize new controller for this request
         this.stopStream();
         this.abortController = new AbortController();
 
-        // Only fallback to mock if key is empty or still the placeholder
         if (!this.apiKey || this.apiKey === 'YOUR_COHERE_API_KEY') {
-            return this.generateMockResponse(query, employees);
+            return this.generateMockResponse(query, employees, user);
         }
 
-        this.streamResponseWithTools(query, employees, responseSubject);
+        this.streamResponseWithTools(query, employees, responseSubject, user);
         return responseSubject.asObservable();
     }
 
@@ -59,6 +58,7 @@ export class CohereService {
         query: string,
         employees: AuthorizedEmployee[],
         subject: Subject<string>,
+        user: AuthUser,
         chatHistory: any[] = []
     ): Promise<void> {
         const signal = this.abortController?.signal;
@@ -82,7 +82,7 @@ export class CohereService {
             const body: any = {
                 message: query,
                 model: 'command-a-03-2025',
-                preamble: this.buildLightPreamble(employees),
+                preamble: this.buildLightPreamble(employees, user),
                 temperature: 0.1,
                 stream: true,
                 tools: tools,
@@ -243,13 +243,20 @@ export class CohereService {
     /**
      * Build the light preamble (basic list only)
      */
-    private buildLightPreamble(employees: AuthorizedEmployee[]): string {
+    private buildLightPreamble(employees: AuthorizedEmployee[], user: AuthUser): string {
         const employeeList = employees.map(e =>
-            `- שם: ${e.name}${e.nickname ? ` (${e.nickname})` : ''}, מזהה: ${e.id}, מחלקה: ${e.department}`
+            `- שם: ${e.name}, כינוי: ${e.nickname}, מזהה: ${e.id || e.number}, מחלקה: ${e.departmentName}, תפקיד: ${e.roleName}, מגדר: ${e.gender === 1 ? 'זכר' : 'נקבה'}`
         ).join('\n');
+
+        const genderInstruction = user.gender === 1
+            ? "פנה למשתמש בלשון זכר."
+            : "פנה למשתמשת בלשון נקבה.";
 
         return `אתה עוזר HR חכם בשם "HR Insight". 
 לפניך רשימה של עובדים מורשים. 
+
+המשתמש המחובר: ${user.firstName} ${user.lastName} (כינוי: ${user.nickname}), מגדר: ${user.gender === 1 ? 'זכר' : 'נקבה'}.
+${genderInstruction}
 
 רשימת עובדים:
 ${employeeList}
@@ -257,7 +264,7 @@ ${employeeList}
 הנחיות:
 1. אם נשאלת שאלה על עובד ספציפי, השתמש בכלי "get_employee_detailed_data" כדי לקבל את כל המידע שלו (שכר, חופשה וכו').
 2. אל תנחש נתונים שאינם ברשימה לעיל ללא שימוש בכלי.
-3. ענה תמיד בעברית מקצועית ואדיבה.
+3. ענה תמיד בעברית מקצועית ואדיבה. השתמש במגדר הנכון לפי פרטי המשתמש/ת.
 4. השתמש ב-Markdown לעיצוב התשובה.`;
     }
 
@@ -269,8 +276,8 @@ ${employeeList}
         return {
             name: e.personalInfo.name,
             id: e.id,
-            role: e.personalInfo.role,
-            department: e.personalInfo.department,
+            role: e.personalInfo.roleName,
+            department: e.personalInfo.departmentName,
             manager: e.personalInfo.manager,
             startDate: e.personalInfo.startDate,
             vacationBalance: e.timeOff.vacationBalance,
@@ -281,10 +288,7 @@ ${employeeList}
         };
     }
 
-    /**
-     * Mock logic updated for AuthorizedEmployee[]
-     */
-    private generateMockResponse(query: string, employees: AuthorizedEmployee[]): Observable<string> {
+    private generateMockResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser): Observable<string> {
         const subject = new Subject<string>();
 
         (async () => {
@@ -294,30 +298,35 @@ ${employeeList}
 
                 const found = employees.find(e =>
                     lowerQuery.includes(e.name.toLowerCase()) ||
-                    (e.nickname && lowerQuery.includes(e.nickname.toLowerCase())) ||
-                    lowerQuery.includes(e.id)
+                    lowerQuery.includes(e.nickname.toLowerCase()) ||
+                    lowerQuery.includes(e.id || '') ||
+                    lowerQuery.includes(e.number.toLowerCase())
                 );
 
+                const robotPrefix = user.gender === 1 ? 'אני עוזר חכם' : 'אני עוזרת חכמה';
                 let finalResponse = '';
-                if (found) {
+                if (found && found.id) {
                     // In mock mode, we "simulate" fetching by calling the real service
                     const data = await this.employeeDataService.getEmployeeData(found.id);
                     if (data) {
+                        const genderGreeing = user.gender === 1 ? 'שלום אדוני' : 'שלום גבירתי';
                         if (lowerQuery.includes('חופש')) {
-                            finalResponse = `🌴 **ימי חופשה של ${data.personalInfo.name}:**\n\n` +
+                            finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix} ואשמח לעזור.\n\n` +
+                                `🌴 **ימי חופשה של ${data.personalInfo.name}:**\n\n` +
                                 `• ימי חופשה שנותרו: **${data.timeOff.vacationBalance}** ימים\n` +
                                 `• ימים שנוצלו: **${data.timeOff.vacationUsed}** ימים`;
                         } else if (lowerQuery.includes('שכר') || lowerQuery.includes('משכורת')) {
                             const latest = data.salaryHistory[data.salaryHistory.length - 1];
-                            finalResponse = `💰 **שכר ברוטו של ${data.personalInfo.name}:** **₪${latest.grossSalary.toLocaleString()}**`;
+                            finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix}. השכר של ${data.personalInfo.name} הוא:\n\n` +
+                                `💰 **שכר ברוטו:** **₪${latest.grossSalary.toLocaleString()}**`;
                         } else {
-                            finalResponse = `✅ נמצאה התאמה במערכת:\n**${data.personalInfo.name}** (מספר עובד: **${data.id}**)`;
+                            finalResponse = `✅ ${robotPrefix}. מצאתי את העובד:\n**${data.personalInfo.name}** (מספר עובד: **${data.id}**)`;
                         }
                     } else {
-                        finalResponse = `❌ לא הצלחתי לשלוף נתונים עבור העובד: ${found.name}`;
+                        finalResponse = `❌ ${robotPrefix}. לא הצלחתי לשלוף נתונים עבור העובד: ${found.name}`;
                     }
                 } else {
-                    finalResponse = `❌ לא נמצא עובד מתאים במערכת עבור: "${query}"`;
+                    finalResponse = `❌ ${robotPrefix}. לא נמצא עובד מתאים במערכת עבור: "${query}"`;
                 }
 
                 const words = finalResponse.split(' ');

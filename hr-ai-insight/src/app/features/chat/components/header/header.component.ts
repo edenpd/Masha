@@ -14,7 +14,7 @@ import { AppStore } from '../../../../store/app.store';
           <span class="text-xl">🧠</span>
         </div>
         <div>
-          <h1 class="font-bold text-lg gradient-text">HR AI Insight</h1>
+          <h1 class="font-bold text-lg gradient-text">HR AI</h1>
           <p class="text-xs text-gray-400 dark:text-gray-500">מערכת AI לניהול משאבי אנוש</p>
         </div>
       </div>
@@ -72,12 +72,12 @@ import { AppStore } from '../../../../store/app.store';
         @if (store.currentUser(); as user) {
           <div class="flex items-center gap-3 pl-2">
             <div class="text-right hidden sm:block">
-              <p class="text-sm font-medium">{{ user.name }}</p>
-              <p class="text-xs text-gray-500 line-clamp-1">{{ user.role }}</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.firstName }} {{ user.lastName }}</p>
+              <p class="text-xs text-gray-500 line-clamp-1">{{ user.departmentName }}</p>
             </div>
             <img 
-              [src]="user.photoUrl" 
-              [alt]="user.name"
+              [src]="user.imageUrl" 
+              [alt]="user.firstName"
               class="w-10 h-10 rounded-full ring-2 ring-neural-500/50"
             />
           </div>
@@ -108,15 +108,15 @@ import { AppStore } from '../../../../store/app.store';
           
           <div class="space-y-3">
             @for (emp of store.authorizedEmployees(); track emp.id) {
-              <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer text-right">
                 <img 
-                  [src]="emp.photoUrl" 
+                  [src]="emp.imageUrl" 
                   [alt]="emp.name"
                   class="w-10 h-10 rounded-full"
                 >
                 <div>
-                  <p class="font-medium text-sm">{{ emp.name }}</p>
-                  <p class="text-xs text-gray-500">{{ emp.role }}</p>
+                  <p class="font-medium text-sm text-white">{{ emp.name }}</p>
+                  <p class="text-xs text-gray-500">{{ emp.roleName }}</p>
                 </div>
               </div>
             }

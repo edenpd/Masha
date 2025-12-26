@@ -14,20 +14,26 @@ export class EmployeeDataService {
      * Detailed mock data for each employee
      */
     private readonly employeeDataMap: Record<string, EmployeeData> = {
-        '1': {
-            id: '1',
+        'emp-0': {
+            id: 'emp-0',
             personalInfo: {
                 name: 'דני כהן',
+                firstName: 'דני',
+                lastName: 'כהן',
                 nickname: 'דני',
+                gender: 1,
+                number: 'EMP-101',
                 email: 'dani.cohen@company.co.il',
                 phone: '050-1234567',
                 address: 'רחוב הרצל 15, תל אביב',
                 birthDate: '1988-03-15',
                 startDate: '2019-06-01',
-                department: 'פיתוח',
-                role: 'מפתח בכיר',
+                hativaName: 'טכנולוגיה',
+                departmentName: 'פיתוח',
+                branchName: 'תל אביב',
+                roleName: 'מפתח בכיר',
                 manager: 'אבי גולדשטיין',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=dani&backgroundColor=059669'
+                imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=dany'
             },
             timeOff: {
                 vacationBalance: 12,
@@ -49,20 +55,26 @@ export class EmployeeDataService {
             salaryHistory: this.generateSalaryHistory(25000, 28500),
             performanceRating: 4.5
         },
-        '2': {
-            id: '2',
+        'emp-1': {
+            id: 'emp-1',
             personalInfo: {
                 name: 'שרה לוי',
+                firstName: 'שרה',
+                lastName: 'לוי',
                 nickname: 'שרה',
+                gender: 2,
+                number: 'EMP-102',
                 email: 'sarah.levi@company.co.il',
                 phone: '052-9876543',
                 address: 'שדרות רוטשילד 42, תל אביב',
                 birthDate: '1990-11-22',
                 startDate: '2020-02-15',
-                department: 'שיווק',
-                role: 'מנהלת שיווק',
+                hativaName: 'מטה',
+                departmentName: 'שיווק',
+                branchName: 'תל אביב',
+                roleName: 'מנהלת שיווק',
                 manager: 'רונית שפירא',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=sarah&backgroundColor=d946ef'
+                imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=sarah'
             },
             timeOff: {
                 vacationBalance: 15,
@@ -75,20 +87,26 @@ export class EmployeeDataService {
             salaryHistory: this.generateSalaryHistory(22000, 26000),
             performanceRating: 4.8
         },
-        '3': {
-            id: '3',
+        'emp-2': {
+            id: 'emp-2',
             personalInfo: {
                 name: 'יוסי אברהם',
+                firstName: 'יוסי',
+                lastName: 'אברהם',
                 nickname: 'יוסי',
+                gender: 1,
+                number: 'EMP-103',
                 email: 'yossi.avraham@company.co.il',
                 phone: '054-5551234',
                 address: 'רחוב דיזנגוף 100, תל אביב',
                 birthDate: '1985-07-08',
                 startDate: '2018-01-10',
-                department: 'מכירות',
-                role: 'איש מכירות',
+                hativaName: 'מכירות',
+                departmentName: 'מכירות פנים',
+                branchName: 'חיפה',
+                roleName: 'איש מכירות',
                 manager: 'שרה לוי',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=yossi&backgroundColor=f59e0b'
+                imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=yossi'
             },
             timeOff: {
                 vacationBalance: 8,
@@ -101,20 +119,26 @@ export class EmployeeDataService {
             salaryHistory: this.generateSalaryHistory(18000, 22000),
             performanceRating: 4.2
         },
-        '4': {
-            id: '4',
+        'emp-3': {
+            id: 'emp-3',
             personalInfo: {
                 name: 'מיכל רוזנברג',
+                firstName: 'מיכל',
+                lastName: 'רוזנברג',
                 nickname: 'מיכל',
+                gender: 2,
+                number: 'EMP-104',
                 email: 'michal.rosenberg@company.co.il',
                 phone: '053-7778899',
                 address: 'רחוב בן יהודה 55, רמת גן',
                 birthDate: '1992-04-30',
                 startDate: '2021-09-01',
-                department: 'משאבי אנוש',
-                role: 'רכזת גיוס',
+                hativaName: 'מטה',
+                departmentName: 'משאבי אנוש',
+                branchName: 'נתניה',
+                roleName: 'רכזת גיוס',
                 manager: 'מנהל משאבי אנוש',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=michal&backgroundColor=ec4899'
+                imageUrl: 'https://api.dicebear.com/7.x/bitmoji/svg?seed=michal'
             },
             timeOff: {
                 vacationBalance: 14,
@@ -136,20 +160,26 @@ export class EmployeeDataService {
             salaryHistory: this.generateSalaryHistory(15000, 18000),
             performanceRating: 4.0
         },
-        '5': {
-            id: '5',
+        'emp-4': {
+            id: 'emp-4',
             personalInfo: {
                 name: 'אבי גולדשטיין',
+                firstName: 'אבי',
+                lastName: 'גולדשטיין',
                 nickname: 'אבי',
+                gender: 1,
+                number: 'EMP-105',
                 email: 'avi.goldstein@company.co.il',
                 phone: '050-1112233',
                 address: 'רחוב הירקון 20, תל אביב',
                 birthDate: '1980-12-05',
                 startDate: '2015-03-20',
-                department: 'פיתוח',
-                role: 'ארכיטקט תוכנה',
+                hativaName: 'טכנולוגיה',
+                departmentName: 'פיתוח',
+                branchName: 'תל אביב',
+                roleName: 'ארכיטקט תוכנה',
                 manager: 'מנהל פיתוח',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=avi&backgroundColor=6366f1'
+                imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=avi'
             },
             timeOff: {
                 vacationBalance: 20,
@@ -161,93 +191,6 @@ export class EmployeeDataService {
             },
             salaryHistory: this.generateSalaryHistory(35000, 42000),
             performanceRating: 4.9
-        },
-        '6': {
-            id: '6',
-            personalInfo: {
-                name: 'נועה בן דוד',
-                nickname: 'נועה',
-                email: 'noa.bendavid@company.co.il',
-                phone: '052-4445566',
-                address: 'רחוב אלנבי 80, תל אביב',
-                birthDate: '1995-08-18',
-                startDate: '2022-07-01',
-                department: 'עיצוב',
-                role: 'מעצבת UX',
-                manager: 'אבי גולדשטיין',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=noa&backgroundColor=14b8a6'
-            },
-            timeOff: {
-                vacationBalance: 16,
-                sickLeaveBalance: 10,
-                vacationUsed: 2,
-                sickLeaveUsed: 1,
-                personalDays: 0,
-                pendingRequests: []
-            },
-            salaryHistory: this.generateSalaryHistory(16000, 19000),
-            performanceRating: 4.3
-        },
-        '7': {
-            id: '7',
-            personalInfo: {
-                name: 'עמית פרידמן',
-                nickname: 'עמית',
-                email: 'amit.friedman@company.co.il',
-                phone: '054-9998877',
-                address: 'רחוב ויצמן 30, הרצליה',
-                birthDate: '1987-02-14',
-                startDate: '2017-11-01',
-                department: 'כספים',
-                role: 'חשב',
-                manager: 'סמנכ״ל כספים',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=amit&backgroundColor=8b5cf6'
-            },
-            timeOff: {
-                vacationBalance: 10,
-                sickLeaveBalance: 8,
-                vacationUsed: 8,
-                sickLeaveUsed: 4,
-                personalDays: 2,
-                pendingRequests: []
-            },
-            salaryHistory: this.generateSalaryHistory(28000, 33000),
-            performanceRating: 4.6
-        },
-        '8': {
-            id: '8',
-            personalInfo: {
-                name: 'רונית שפירא',
-                nickname: 'רונית',
-                email: 'ronit.shapira@company.co.il',
-                phone: '050-6667788',
-                address: 'רחוב הנביאים 12, ירושלים',
-                birthDate: '1983-06-25',
-                startDate: '2016-04-15',
-                department: 'תפעול',
-                role: 'מנהלת תפעול',
-                manager: 'מנכ״ל',
-                photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=ronit&backgroundColor=f43f5e'
-            },
-            timeOff: {
-                vacationBalance: 18,
-                sickLeaveBalance: 12,
-                vacationUsed: 7,
-                sickLeaveUsed: 2,
-                personalDays: 1,
-                pendingRequests: [
-                    {
-                        id: 'req3',
-                        type: 'vacation',
-                        startDate: '2025-02-10',
-                        endDate: '2025-02-14',
-                        status: 'pending',
-                        reason: 'חופשה בחו״ל'
-                    }
-                ]
-            },
-            salaryHistory: this.generateSalaryHistory(30000, 38000),
-            performanceRating: 4.7
         }
     };
 

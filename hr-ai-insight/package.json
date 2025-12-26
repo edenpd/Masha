@@ -1,7 +1,7 @@
 {
   "name": "hr-ai-insight",
   "version": "1.0.0",
-  "description": "HR AI Insight - Chat application for HR professionals",
+  "description": "HR AI - Chat application for HR professionals",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

@@ -17,8 +17,6 @@ import {
 } from '../models';
 import {
     AuthService,
-    EmployeeLookupService,
-    EmployeeDataService,
     CohereService
 } from '../core/services';
 
@@ -54,15 +52,12 @@ const initialState: AppStoreState = {
     isProcessing: false,
     appState: 'initializing',
     loadingSteps: [
-        { id: 'auth', text: 'מאמת זהות משתמש...', completed: false, icon: '🔐' },
-        { id: 'connect', text: 'מתחבר למערכות הארגון...', completed: false, icon: '🔌' },
-        { id: 'employees', text: 'טוען נתוני עובדים מורשים...', completed: false, icon: '👥' },
-        { id: 'neural', text: 'מאתחל רשת נוירונים...', completed: false, icon: '🧠' },
-        { id: 'ready', text: 'מכין ממשק שיחה...', completed: false, icon: '💬' },
+        { id: 'user', text: 'מזהה משתמש...', completed: false, icon: '👤' },
+        { id: 'employees', text: 'טוען רשימת עובדים מורשים...', completed: false, icon: '👥' },
     ],
     currentLoadingStep: 0,
     error: null,
-    theme: 'dark',
+    theme: 'light',
 };
 
 /**
@@ -82,18 +77,13 @@ export const AppStore = signalStore(
             ['initializing', 'authenticating', 'loading-data'].includes(store.appState())
         ),
 
-        // Get visible loading steps (completed + current)
-        visibleLoadingSteps: computed(() => {
-            const steps = store.loadingSteps();
-            const current = store.currentLoadingStep();
-            return steps.slice(0, current + 1);
-        }),
+        // Get visible loading steps
+        visibleLoadingSteps: computed(() => store.loadingSteps()),
 
         // Current loading message
         currentLoadingMessage: computed(() => {
-            const steps = store.loadingSteps();
-            const current = store.currentLoadingStep();
-            return steps[current]?.text ?? 'טוען...';
+            const currentStep = store.loadingSteps().find(s => !s.completed);
+            return currentStep?.text ?? 'טוען...';
         }),
 
         // Get employee count
@@ -111,8 +101,6 @@ export const AppStore = signalStore(
     withMethods((store) => {
         // Inject services
         const authService = inject(AuthService);
-        const employeeLookup = inject(EmployeeLookupService);
-        const employeeData = inject(EmployeeDataService);
         const cohereService = inject(CohereService);
 
         // Helper to update loading step
@@ -159,7 +147,7 @@ export const AppStore = signalStore(
         return {
             /**
              * Initialize the application
-             * Handles auth and data loading with animated steps
+             * Fetches combined data in one call
              */
             async initialize() {
                 // Initialize theme
@@ -170,47 +158,46 @@ export const AppStore = signalStore(
                 }
 
                 try {
-                    // Step 1: Authentication
-                    patchState(store, { appState: 'authenticating' });
-                    updateLoadingStep(0, false);
-
-                    await delay(500);
-                    const user = await authService.authenticate();
-                    patchState(store, { currentUser: user });
-                    updateLoadingStep(0, true);
-
-                    // Step 2: Connect to systems (simulated)
-                    updateLoadingStep(1, false);
-                    await delay(600);
-                    updateLoadingStep(1, true);
-
-                    // Step 3: Load employees
                     patchState(store, { appState: 'loading-data' });
-                    updateLoadingStep(2, false);
 
-                    const employees = await employeeLookup.getAuthorizedEmployees();
+                    // Step 1: Get User Details (Fast)
+                    const userData = await authService.getCurrentUser();
+                    const theme = userData.isDarkMode ? 'dark' : 'light';
+
+                    patchState(store, {
+                        currentUser: userData,
+                        theme: theme,
+                        currentLoadingStep: 1,
+                        loadingSteps: store.loadingSteps().map(s => s.id === 'user' ? { ...s, completed: true } : s)
+                    });
+
+                    // Update document class immediately so loading screen adapts
+                    if (theme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+
+                    // Step 2: Get Authorized Employees (Slower)
+                    const employees = await authService.getAuthorizedEmployees();
+
                     patchState(store, {
                         authorizedEmployees: employees,
+                        currentLoadingStep: 2,
+                        loadingSteps: store.loadingSteps().map(s => s.id === 'employees' ? { ...s, completed: true } : s)
                     });
-                    updateLoadingStep(2, true);
 
-                    // Step 4: Initialize neural network (simulated)
-                    updateLoadingStep(3, false);
-                    await delay(800);
-                    updateLoadingStep(3, true);
+                    // Small delay for smooth transition
+                    await delay(500);
 
-                    // Step 5: Prepare chat interface
-                    updateLoadingStep(4, false);
-                    await delay(400);
-                    updateLoadingStep(4, true);
+                    const user = store.currentUser()!;
+                    const welcomeMsg = user.gender === 1
+                        ? `שלום ${user.firstName}! 👋\n\nאני העוזר החכם שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`
+                        : `שלום ${user.firstName}! 👋\n\nאני העוזרת החכמה שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`;
 
-                    // Final transition
-                    await delay(300);
-
-                    // Add welcome message
                     addMessage({
                         type: 'assistant',
-                        content: `שלום ${user.name}! 👋\n\nאני העוזר החכם שלך לניהול משאבי אנוש. יש לי גישה לנתונים של **${employees.length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n• "כמה ימי חופש נשארו לדני?"\n• "מה המשכורת של שרה?"\n• "באיזה מחלקה עובד יוסי?"\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
+                        content: `${welcomeMsg}\n\nיש לי גישה לנתונים של **${store.authorizedEmployees().length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n• "כמה ימי חופש נשארו לדני?"\n• "מה המשכורת של שרה?"\n• "באיזה מחלקה עובד יוסי?"\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
                     });
 
                     patchState(store, { appState: 'ready' });
@@ -246,9 +233,12 @@ export const AppStore = signalStore(
 
                 try {
                     const employees = store.authorizedEmployees();
+                    const user = store.currentUser();
+
+                    if (!user) throw new Error('No user found');
 
                     // Step A: Generate AI response as a stream
-                    msgSubscription = cohereService.generateResponse(userInput, employees).subscribe({
+                    msgSubscription = cohereService.generateResponse(userInput, employees, user).subscribe({
                         next: (chunk) => {
                             // If this is the first chunk, remove typing indicator
                             if (store.hasTypingIndicator()) {
@@ -327,9 +317,10 @@ export const AppStore = signalStore(
                 const employees = store.authorizedEmployees();
 
                 if (user) {
+                    const helpPrefix = user.gender === 1 ? 'כיצד אוכל לעזור לך' : 'כיצד אוכל לעזור לך'; // In Hebrew both are same spelled but spoken differently
                     addMessage({
                         type: 'assistant',
-                        content: `השיחה נוקתה. כיצד אוכל לעזור לך, ${user.name}?\n\nיש לי גישה לנתונים של ${employees.length} עובדים מורשים.`,
+                        content: `השיחה נוקתה. ${helpPrefix}, ${user.nickname}?\n\nיש לי גישה לנתונים של ${employees.length} עובדים מורשים.`,
                     });
                 }
             },

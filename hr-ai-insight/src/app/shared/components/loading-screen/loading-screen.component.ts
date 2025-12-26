@@ -3,158 +3,171 @@ import { CommonModule } from '@angular/common';
 import { AppStore } from '../../../store/app.store';
 
 @Component({
-    selector: 'app-loading-screen',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
-    <div class="min-h-screen bg-deep-900 bg-mesh-gradient flex flex-col items-center justify-center relative overflow-hidden">
+  selector: 'app-loading-screen',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="min-h-screen bg-slate-50 dark:bg-deep-900 transition-colors duration-1000 flex flex-col items-center justify-center relative overflow-hidden font-outfit">
       
-      <!-- Animated Background Elements -->
+      <!-- Premium Background elements -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <!-- Neural network lines -->
-        @for (line of neuralLines; track line.id) {
-          <div 
-            class="absolute bg-gradient-to-r from-transparent via-neural-500/20 to-transparent h-px animate-pulse"
-            [style.top.%]="line.top"
-            [style.left.%]="line.left"
-            [style.width.%]="line.width"
-            [style.transform]="'rotate(' + line.rotation + 'deg)'"
-            [style.animation-delay]="line.delay + 'ms'"
-          ></div>
-        }
-        
-        <!-- Floating orbs -->
-        <div class="absolute top-1/4 right-1/4 w-64 h-64 bg-neural-500/10 rounded-full blur-3xl animate-float"></div>
-        <div class="absolute bottom-1/4 left-1/4 w-80 h-80 bg-synapse-500/10 rounded-full blur-3xl animate-float" style="animation-delay: -2s"></div>
-        <div class="absolute top-1/2 left-1/2 w-48 h-48 bg-matrix-500/10 rounded-full blur-3xl animate-float" style="animation-delay: -4s"></div>
+        <div class="absolute -top-24 -right-24 w-96 h-96 bg-neural-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-synapse-500/10 rounded-full blur-[140px] animate-pulse-slow" style="animation-delay: -2s"></div>
       </div>
 
-      <!-- Main Content -->
-      <div class="relative z-10 flex flex-col items-center">
+      <!-- Center Piece -->
+      <div class="relative z-10 flex flex-col items-center max-w-sm w-full px-6">
         
-        <!-- Logo / Brain Icon with Glow -->
-        <div class="relative mb-12">
-          <div class="absolute inset-0 bg-gradient-to-r from-neural-500 to-synapse-500 rounded-full blur-2xl opacity-50 animate-pulse-slow"></div>
-          <div class="relative glass rounded-3xl p-8 border border-white/20">
-            <div class="text-7xl animate-float">🧠</div>
+        <!-- Spinner Element -->
+        <div class="relative mb-16 scale-125">
+          <!-- Multi-layered glow -->
+          <div class="absolute inset-0 bg-neural-500 rounded-full blur-3xl opacity-10 dark:opacity-20 animate-pulse-slow"></div>
+          
+          <!-- Modern Spinner -->
+          <div class="relative w-32 h-32 flex items-center justify-center">
+            <svg class="w-full h-full animate-spin-slow" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:var(--neural-500);stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:var(--synapse-500);stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <circle 
+                cx="50" cy="50" r="45" 
+                fill="none" 
+                stroke="url(#spinner-gradient)" 
+                stroke-width="3" 
+                stroke-linecap="round"
+                stroke-dasharray="180 100"
+              />
+            </svg>
+            <!-- HR AI Smart Animation (Profile & Data Insight) -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-24 h-24 rounded-full border border-gray-200 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-md flex items-center justify-center overflow-hidden shadow-sm">
+                <svg viewBox="0 0 100 100" class="w-16 h-16 text-neural-500">
+                  <!-- Profile Silhouette -->
+                  <circle cx="50" cy="40" r="12" fill="currentColor" opacity="0.4" />
+                  <path d="M50 55 C30 55, 20 75, 20 90 L80 90 C80 75, 70 55, 50 55 Z" fill="currentColor" opacity="0.4" />
+                  
+                  <!-- Scanning Bar -->
+                  <rect x="15" y="30" width="70" height="2" fill="var(--synapse-500)" opacity="0.8">
+                    <animate attributeName="y" values="30;85;30" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.2;0.8;0.2" dur="2s" repeatCount="indefinite" />
+                  </rect>
+
+                  <!-- Pulsing AI Chat Bubble -->
+                  <g class="animate-bounce" style="animation-duration: 3s">
+                    <path d="M75 25 C75 20, 85 20, 85 25 L85 35 C85 40, 75 40, 75 35 Z" fill="var(--synapse-500)" opacity="0.6" />
+                    <circle cx="80" cy="30" r="8" fill="var(--synapse-500)" opacity="0.8">
+                      <animate attributeName="r" values="7;9;7" dur="1.5s" repeatCount="indefinite" />
+                    </circle>
+                  </g>
+
+                  <!-- Floating Data Particles (HR Symbols) -->
+                  <text x="25" y="45" font-size="10" fill="currentColor" opacity="0.6" class="animate-pulse">₪</text>
+                  <text x="65" y="75" font-size="10" fill="currentColor" opacity="0.6" class="animate-pulse" style="animation-delay: 0.5s">📅</text>
+                  <text x="35" y="70" font-size="8" fill="currentColor" opacity="0.6" class="animate-pulse" style="animation-delay: 1s">👔</text>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Title -->
-        <h1 class="text-4xl md:text-5xl font-bold mb-2 gradient-text text-glow">
-          HR AI Insight
-        </h1>
-        <p class="text-gray-400 text-lg mb-12">מערכת AI חכמה לניהול משאבי אנוש</p>
-
-        <!-- Loading Steps Card -->
-        <div class="glass-dark rounded-2xl p-8 w-full max-w-md">
-          
-          <!-- Progress Bar -->
-          <div class="h-1.5 bg-deep-700 rounded-full mb-8 overflow-hidden">
-            <div 
-              class="h-full bg-gradient-to-r from-neural-500 via-synapse-500 to-matrix-500 rounded-full transition-all duration-700 ease-out"
-              [style.width.%]="progressPercent()"
-            ></div>
-          </div>
-
-          <!-- Steps List -->
-          <div class="space-y-4">
-            @for (step of store.visibleLoadingSteps(); track step.id; let i = $index) {
-              <div 
-                class="flex items-center gap-4 transition-all duration-500"
-                [class.opacity-100]="step.completed || i === store.currentLoadingStep()"
-                [class.opacity-40]="!step.completed && i !== store.currentLoadingStep()"
-                [style.animation-delay]="i * 100 + 'ms'"
-              >
-                <!-- Icon / Spinner -->
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                     [class]="step.completed ? 'bg-matrix-500/20 text-matrix-400' : 'bg-neural-500/20 text-neural-400'">
-                  @if (step.completed) {
-                    <span class="animate-fade-in">✓</span>
-                  } @else if (i === store.currentLoadingStep()) {
-                    <div class="w-5 h-5 border-2 border-neural-400 border-t-transparent rounded-full animate-spin"></div>
-                  } @else {
-                    <span>{{ step.icon }}</span>
-                  }
-                </div>
-                
-                <!-- Text -->
-                <div class="flex-1">
-                  <p class="font-medium" [class.text-matrix-400]="step.completed">
-                    {{ step.text }}
-                  </p>
-                </div>
-              </div>
+        <!-- Typography -->
+        <div class="text-center mb-12">
+          <h1 class="text-4xl font-bold mb-3 gradient-text tracking-tight animate-fade-in">
+            HR AI
+          </h1>
+          <div class="flex items-center justify-center gap-2 text-gray-400 dark:text-neural-400 font-medium tracking-wide">
+            <span class="w-1.5 h-1.5 rounded-full bg-neural-500 animate-pulse"></span>
+            @for (msg of [store.currentLoadingMessage()]; track msg) {
+              <span class="animate-fade-in inline-block">
+                {{ msg }}
+              </span>
             }
           </div>
         </div>
 
-        <!-- Neural Dots Animation -->
-        <div class="flex gap-2 mt-12">
-          @for (dot of [0,1,2,3]; track dot) {
-            <div class="neural-dot" [style.animation-delay]="dot * 200 + 'ms'"></div>
-          }
+        <!-- Rotating Tip -->
+        <div class="h-6 flex items-center justify-center">
+            @for (tip of [randomTip()]; track tip) {
+              <p class="text-gray-400 dark:text-gray-500 text-sm font-light animate-fade-in text-center italic">
+                {{ tip }}
+              </p>
+            }
         </div>
+      </div>
 
-        <!-- Subtitle -->
-        <p class="text-sm text-gray-500 mt-8">
-          {{ randomTip() }}
-        </p>
+      <!-- Bottom Branding -->
+      <div class="absolute bottom-12 text-gray-300 dark:text-gray-600 text-[10px] uppercase tracking-[0.2em] font-bold">
+        Secure Intelligent Core
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     :host {
       display: block;
+    }
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    .animate-spin-slow {
+      animation: spin 3s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 8s ease-in-out infinite;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.1; transform: scale(1); }
+      50% { opacity: 0.2; transform: scale(1.1); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    :host {
+      --neural-500: #10b981;
+      --synapse-500: #3b82f6;
     }
   `]
 })
 export class LoadingScreenComponent implements OnInit, OnDestroy {
-    protected readonly store = inject(AppStore);
+  protected readonly store = inject(AppStore);
 
-    // Neural network lines for background
-    neuralLines = Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        top: Math.random() * 100,
-        left: -10 + Math.random() * 20,
-        width: 40 + Math.random() * 60,
-        rotation: -30 + Math.random() * 60,
-        delay: Math.random() * 2000,
-    }));
+  // Random tips in Hebrew
+  private tips = [
+    '💡 טיפ: תוכל לשאול על ימי חופש, משכורות ופרטי עובדים',
+    '🔒 כל הנתונים מוצפנים ומאובטחים',
+    '🚀 מערכת AI מתקדמת לעיבוד שפה טבעית',
+    '📊 גישה מיידית לנתוני משאבי אנוש',
+    '🌐 מותאם לעברית מלאה',
+  ];
 
-    // Random tips in Hebrew
-    private tips = [
-        '💡 טיפ: תוכל לשאול על ימי חופש, משכורות ופרטי עובדים',
-        '🔒 כל הנתונים מוצפנים ומאובטחים',
-        '🚀 מערכת AI מתקדמת לעיבוד שפה טבעית',
-        '📊 גישה מיידית לנתוני משאבי אנוש',
-        '🌐 מותאם לעברית מלאה',
-    ];
+  protected currentTipIndex = signal(0);
+  private tipInterval?: ReturnType<typeof setInterval>;
 
-    private currentTipIndex = signal(0);
-    private tipInterval?: ReturnType<typeof setInterval>;
+  ngOnInit(): void {
+    // Rotate tips every 3 seconds
+    this.tipInterval = setInterval(() => {
+      this.currentTipIndex.update(i => (i + 1) % this.tips.length);
+    }, 3000);
+  }
 
-    ngOnInit(): void {
-        // Rotate tips every 3 seconds
-        this.tipInterval = setInterval(() => {
-            this.currentTipIndex.update(i => (i + 1) % this.tips.length);
-        }, 3000);
-    }
+  ngOnDestroy(): void {
+    if (this.tipInterval) clearInterval(this.tipInterval);
+  }
 
-    ngOnDestroy(): void {
-        if (this.tipInterval) {
-            clearInterval(this.tipInterval);
-        }
-    }
-
-    // Computed progress percentage
-    progressPercent = () => {
-        const total = this.store.loadingSteps().length;
-        const current = this.store.currentLoadingStep();
-        const completed = this.store.loadingSteps().filter(s => s.completed).length;
-        return Math.round((completed / total) * 100);
-    };
-
-    // Get current tip
-    randomTip = () => this.tips[this.currentTipIndex()];
+  // Get current tip
+  randomTip = () => this.tips[this.currentTipIndex()];
 }

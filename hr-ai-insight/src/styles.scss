@@ -22,18 +22,18 @@
     @apply transition-colors duration-300;
   }
 
-  .dark body {
+  html.dark body {
     @apply bg-deep-900 text-white;
     background-image:
-      radial-gradient(ellipse at top right, rgba(12, 140, 233, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom left, rgba(217, 70, 239, 0.1) 0%, transparent 50%);
+      radial-gradient(ellipse at top right, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
   }
 
-  body:not(.dark body) {
+  html:not(.dark) body {
     @apply bg-slate-50 text-slate-900;
     background-image:
-      radial-gradient(ellipse at top right, rgba(12, 140, 233, 0.1) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom left, rgba(217, 70, 239, 0.05) 0%, transparent 50%);
+      radial-gradient(ellipse at top right, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
   }
 
   /* Custom scrollbar */

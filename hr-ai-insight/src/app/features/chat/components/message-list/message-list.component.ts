@@ -21,8 +21,8 @@ import { ChatMessage } from '../../../../models';
                 <div class="flex-shrink-0">
                   @if (store.currentUser(); as user) {
                     <img 
-                      [src]="user.photoUrl" 
-                      [alt]="user.name"
+                      [src]="user.imageUrl" 
+                      [alt]="user.firstName"
                       class="w-10 h-10 rounded-full ring-2 ring-black/10 dark:ring-white/20 shadow-md"
                     />
                   }
@@ -55,7 +55,7 @@ import { ChatMessage } from '../../../../models';
                   @if (message.relatedEmployee) {
                     <div class="flex items-center gap-2 mb-3 pb-3 border-b border-black/5 dark:border-white/10">
                       <img 
-                        [src]="message.relatedEmployee.photoUrl" 
+                        [src]="message.relatedEmployee.imageUrl" 
                         [alt]="message.relatedEmployee.name"
                         class="w-6 h-6 rounded-full"
                       />

@@ -2,22 +2,31 @@
  * Authenticated User Model
  */
 export interface AuthUser {
-    userId: string;
-    name: string;
-    photoUrl: string;
-    role?: string;
+    firstName: string;
+    lastName: string;
+    nickname: string;
+    gender: 1 | 2; // 1 = Male, 2 = Female
+    number: string;
+    imageUrl: string;
+    departmentName: string;
+    isDarkMode: boolean; // Add dark mode preference
+    authEmployees?: AuthorizedEmployee[];
 }
 
 /**
  * Authorized Employee - employees the user can query
  */
 export interface AuthorizedEmployee {
-    id: string;
-    name: string;      // Full name in Hebrew e.g., "דני כהן"
-    nickname?: string; // Short name e.g., "דני"
-    photoUrl: string;
-    department?: string;
-    role?: string;
+    name: string;
+    nickname: string;
+    gender: 1 | 2;
+    number: string;
+    imageUrl: string;
+    hativaName: string;
+    departmentName: string;
+    branchName: string;
+    roleName: string;
+    id?: string;
 }
 
 /**
@@ -27,16 +36,22 @@ export interface EmployeeData {
     id: string;
     personalInfo: {
         name: string;
-        nickname?: string;
+        firstName?: string;
+        lastName?: string;
+        nickname: string;
+        gender: 1 | 2;
+        number: string;
         email: string;
         phone: string;
         address: string;
         birthDate: string;
         startDate: string;
-        department: string;
-        role: string;
+        hativaName: string;
+        departmentName: string;
+        branchName: string;
+        roleName: string;
         manager: string;
-        photoUrl: string;
+        imageUrl: string;
     };
     timeOff: {
         vacationBalance: number;

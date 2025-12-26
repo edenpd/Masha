@@ -42,7 +42,7 @@ import { AuthorizedEmployee } from '../../../../models';
             <!-- Avatar -->
             <div class="relative flex-shrink-0">
               <img 
-                [src]="employee.photoUrl" 
+                [src]="employee.imageUrl" 
                 [alt]="employee.name"
                 class="w-12 h-12 rounded-xl object-cover ring-2 ring-black/5 dark:ring-white/10 group-hover:ring-neural-500/30 transition-all"
               />
@@ -54,10 +54,10 @@ import { AuthorizedEmployee } from '../../../../models';
               <p class="font-medium text-sm truncate group-hover:text-neural-600 dark:group-hover:text-white transition-colors text-gray-900 dark:text-gray-100">
                 {{ employee.name }}
               </p>
-              <p class="text-xs text-gray-500 truncate">{{ employee.role }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ employee.roleName }}</p>
               <div class="flex items-center gap-1.5 mt-1">
                 <span class="text-xs px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-gray-500 dark:text-gray-400">
-                  {{ employee.department }}
+                  {{ employee.departmentName }}
                 </span>
               </div>
             </div>
@@ -84,13 +84,13 @@ import { AuthorizedEmployee } from '../../../../models';
         <div class="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-deep-800/50">
           <div class="flex items-center gap-3 mb-4">
             <img 
-              [src]="emp.photoUrl" 
+              [src]="emp.imageUrl" 
               [alt]="emp.name"
               class="w-10 h-10 rounded-lg"
             />
             <div>
               <p class="font-medium text-sm text-gray-900 dark:text-white">{{ emp.name }}</p>
-              <p class="text-xs text-gray-500">{{ emp.department }}</p>
+              <p class="text-xs text-gray-500">{{ emp.departmentName }}</p>
             </div>
           </div>
           
@@ -155,10 +155,10 @@ export class EmployeeSidebarComponent {
     if (!query) return employees;
 
     return employees.filter(emp =>
-      emp.name.includes(query) ||
-      emp.nickname?.includes(query) ||
-      emp.department?.includes(query) ||
-      emp.role?.includes(query)
+      emp.name.toLowerCase().includes(query) ||
+      emp.nickname.toLowerCase().includes(query) ||
+      emp.departmentName.toLowerCase().includes(query) ||
+      emp.roleName.toLowerCase().includes(query)
     );
   };
 
@@ -175,10 +175,10 @@ export class EmployeeSidebarComponent {
 
   protected askAbout(employee: AuthorizedEmployee, topic: string): void {
     const queries: Record<string, string> = {
-      'חופש': `כמה ימי חופש נשארו ל${employee.nickname || employee.name}?`,
-      'שכר': `מה המשכורת של ${employee.nickname || employee.name}?`,
-      'פרטים': `תן לי פרטים אישיים על ${employee.nickname || employee.name}`,
-      'ביצועים': `מה דירוג הביצועים של ${employee.nickname || employee.name}?`,
+      'חופש': `כמה ימי חופש נשארו ל${employee.name}?`,
+      'שכר': `מה המשכורת של ${employee.name}?`,
+      'פרטים': `תן לי פרטים אישיים על ${employee.name}`,
+      'ביצועים': `מה דירוג הביצועים של ${employee.name}?`,
     };
 
     const query = queries[topic];

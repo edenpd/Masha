@@ -15,68 +15,59 @@ export class EmployeeLookupService {
      */
     private readonly mockEmployees: AuthorizedEmployee[] = [
         {
-            id: '1',
             name: 'דני כהן',
             nickname: 'דני',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=dani&backgroundColor=059669',
-            department: 'פיתוח',
-            role: 'מפתח בכיר'
+            gender: 1,
+            number: 'EMP-101',
+            imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=dany',
+            hativaName: 'טכנולוגיה',
+            departmentName: 'פיתוח',
+            branchName: 'תל אביב',
+            roleName: 'מפתח בכיר'
         },
         {
-            id: '2',
             name: 'שרה לוי',
             nickname: 'שרה',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=sarah&backgroundColor=d946ef',
-            department: 'שיווק',
-            role: 'מנהלת שיווק'
+            gender: 2,
+            number: 'EMP-102',
+            imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=sarah',
+            hativaName: 'מטה',
+            departmentName: 'שיווק',
+            branchName: 'תל אביב',
+            roleName: 'מנהלת שיווק'
         },
         {
-            id: '3',
             name: 'יוסי אברהם',
             nickname: 'יוסי',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=yossi&backgroundColor=f59e0b',
-            department: 'מכירות',
-            role: 'איש מכירות'
+            gender: 1,
+            number: 'EMP-103',
+            imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=yossi',
+            hativaName: 'מכירות',
+            departmentName: 'מכירות פנים',
+            branchName: 'חיפה',
+            roleName: 'איש מכירות'
         },
         {
-            id: '4',
             name: 'מיכל רוזנברג',
             nickname: 'מיכל',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=michal&backgroundColor=ec4899',
-            department: 'משאבי אנוש',
-            role: 'רכזת גיוס'
+            gender: 2,
+            number: 'EMP-104',
+            imageUrl: 'https://api.dicebear.com/7.x/bitmoji/svg?seed=michal',
+            hativaName: 'מטה',
+            departmentName: 'משאבי אנוש',
+            branchName: 'נתניה',
+            roleName: 'רכזת גיוס'
         },
         {
-            id: '5',
             name: 'אבי גולדשטיין',
             nickname: 'אבי',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=avi&backgroundColor=6366f1',
-            department: 'פיתוח',
-            role: 'ארכיטקט תוכנה'
-        },
-        {
-            id: '6',
-            name: 'נועה בן דוד',
-            nickname: 'נועה',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=noa&backgroundColor=14b8a6',
-            department: 'עיצוב',
-            role: 'מעצבת UX'
-        },
-        {
-            id: '7',
-            name: 'עמית פרידמן',
-            nickname: 'עמית',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=amit&backgroundColor=8b5cf6',
-            department: 'כספים',
-            role: 'חשב'
-        },
-        {
-            id: '8',
-            name: 'רונית שפירא',
-            nickname: 'רונית',
-            photoUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=ronit&backgroundColor=f43f5e',
-            department: 'תפעול',
-            role: 'מנהלת תפעול'
+            gender: 1,
+            number: 'EMP-105',
+            imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=avi',
+            hativaName: 'טכנולוגיה',
+            departmentName: 'פיתוח',
+            branchName: 'תל אביב',
+            roleName: 'ארכיטקט תוכנה'
         }
     ];
 
@@ -86,12 +77,12 @@ export class EmployeeLookupService {
      */
     async getAuthorizedEmployees(): Promise<AuthorizedEmployee[]> {
         // Simulate network delay
-        await this.delay(1500);
-        return [...this.mockEmployees];
+        await this.delay(1000);
+        return this.mockEmployees.map((e, idx) => ({ ...e, id: `emp-${idx}` }));
     }
 
     /**
-     * Fuzzy search for employee by name or nickname
+     * Fuzzy search for employee by name
      * Supports partial Hebrew matching
      */
     findEmployee(query: string, employees: AuthorizedEmployee[]): AuthorizedEmployee | null {
@@ -99,20 +90,17 @@ export class EmployeeLookupService {
 
         if (!normalizedQuery) return null;
 
-        // First, try exact match on name or nickname
+        // First, try exact match on name
         let found = employees.find(emp =>
-            emp.name === normalizedQuery ||
-            emp.nickname?.toLowerCase() === normalizedQuery
+            emp.name === normalizedQuery
         );
 
         if (found) return found;
 
         // Then try partial match
         found = employees.find(emp =>
-            emp.name.includes(normalizedQuery) ||
-            emp.nickname?.includes(normalizedQuery) ||
-            normalizedQuery.includes(emp.name) ||
-            (emp.nickname && normalizedQuery.includes(emp.nickname))
+            emp.name.toLowerCase().includes(normalizedQuery) ||
+            normalizedQuery.includes(emp.name.toLowerCase())
         );
 
         if (found) return found;
@@ -123,8 +111,7 @@ export class EmployeeLookupService {
             if (word.length < 2) continue;
 
             found = employees.find(emp =>
-                emp.name.includes(word) ||
-                emp.nickname?.includes(word)
+                emp.name.toLowerCase().includes(word)
             );
 
             if (found) return found;
@@ -154,7 +141,7 @@ export class EmployeeLookupService {
 
         // Try to find employee name in original query first
         for (const emp of employees) {
-            if (query.includes(emp.name) || (emp.nickname && query.includes(emp.nickname))) {
+            if (query.toLowerCase().includes(emp.name.toLowerCase())) {
                 return emp;
             }
         }
