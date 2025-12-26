@@ -237,8 +237,18 @@ export const AppStore = signalStore(
 
                     if (!user) throw new Error('No user found');
 
+                    // Prepare chat history (exclude current message and typing indicators)
+                    const rawMessages = store.messages().filter(m => !m.isTyping);
+                    // The last message is the current user input we just added, so exclude it from history
+                    const historyMessages = rawMessages.slice(0, -1);
+
+                    const chatHistory = historyMessages.map(m => ({
+                        role: m.type === 'user' ? 'USER' : 'CHATBOT',
+                        message: m.content
+                    }));
+
                     // Step A: Generate AI response as a stream
-                    msgSubscription = cohereService.generateResponse(userInput, employees, user).subscribe({
+                    msgSubscription = cohereService.generateResponse(userInput, employees, user, chatHistory).subscribe({
                         next: (chunk) => {
                             // If this is the first chunk, remove typing indicator
                             if (store.hasTypingIndicator()) {

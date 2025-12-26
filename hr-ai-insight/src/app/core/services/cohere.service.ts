@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { firstValueFrom, Observable, Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, Subject } from 'rxjs';
 import { AuthUser, AuthorizedEmployee, EmployeeData } from '../../models';
 import { EmployeeDataService } from './employee-data.service';
 import { environment } from '../../../environments/environment';
@@ -36,7 +36,7 @@ export class CohereService {
     /**
      * Generate response using Cohere API with Tool Use
      */
-    generateResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser): Observable<string> {
+    generateResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser, chatHistory: any[] = []): Observable<string> {
         const responseSubject = new Subject<string>();
 
         // Initialize new controller for this request
@@ -44,10 +44,10 @@ export class CohereService {
         this.abortController = new AbortController();
 
         if (!this.apiKey || this.apiKey === 'YOUR_COHERE_API_KEY') {
-            return this.generateMockResponse(query, employees, user);
+            return this.generateMockResponse(query, employees, user, chatHistory);
         }
 
-        this.streamResponseWithTools(query, employees, responseSubject, user);
+        this.streamResponseWithTools(query, employees, responseSubject, user, chatHistory);
         return responseSubject.asObservable();
     }
 
@@ -262,33 +262,33 @@ ${genderInstruction}
 ${employeeList}
 
 הנחיות:
-1. אם נשאלת שאלה על עובד ספציפי, השתמש בכלי "get_employee_detailed_data" כדי לקבל את כל המידע שלו (שכר, חופשה וכו').
-2. אל תנחש נתונים שאינם ברשימה לעיל ללא שימוש בכלי.
-3. ענה תמיד בעברית מקצועית ואדיבה. השתמש במגדר הנכון לפי פרטי המשתמש/ת.
-4. השתמש ב-Markdown לעיצוב התשובה.`;
+1. אם נשאלת שאלה על עובד ספציפי, השתמש בכלי "get_employee_detailed_data" כדי לקבל את כל המידע שלו.
+2. אל תנחש נתונים שאינם ברשימה לעיל.
+3. ענה תמיד בעברית בלבד. אל תשתמש במונחים טכניים באנגלית (כמו JSON field names).
+4. הצג את התשובה בצורה אנושית ונעימה ב-Markdown.
+5. חשוב: אם ישנם מספר עובדים עם אותו השם, היה אדיב ובקש מהמשתמש להבהיר למי הוא מתכוון. הצג לו רשימה של האפשרויות עם הכינוי ומספר העובד של כל אחד.`;
     }
 
     /**
-     * Format full employee data for AI consumption
+     * Format full employee data for AI consumption - Using Hebrew keys to encourage Hebrew response
      */
     private formatEmployeeForAI(e: EmployeeData): any {
         const latestSalary = e.salaryHistory[e.salaryHistory.length - 1];
         return {
-            name: e.personalInfo.name,
-            id: e.id,
-            role: e.personalInfo.roleName,
-            department: e.personalInfo.departmentName,
-            manager: e.personalInfo.manager,
-            startDate: e.personalInfo.startDate,
-            vacationBalance: e.timeOff.vacationBalance,
-            sickLeaveBalance: e.timeOff.sickLeaveBalance,
-            lastGrossSalary: latestSalary.grossSalary,
-            lastNetSalary: latestSalary.netSalary,
-            performanceRating: e.performanceRating
+            'שם_מלא': e.personalInfo.name,
+            'תפקיד': e.personalInfo.roleName,
+            'מחלקה': e.personalInfo.departmentName,
+            'מנהל_ישיר': e.personalInfo.manager,
+            'תאריך_תחילת_עבודה': e.personalInfo.startDate,
+            'יתרת_ימי_חופשה': e.timeOff.vacationBalance,
+            'יתרת_ימי_מחלה': e.timeOff.sickLeaveBalance,
+            'שכר_ברוטו_אחרון': latestSalary.grossSalary,
+            'שכר_נטו_אחרון': latestSalary.netSalary,
+            'דירוג_ביצועים': e.performanceRating
         };
     }
 
-    private generateMockResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser): Observable<string> {
+    private generateMockResponse(query: string, employees: AuthorizedEmployee[], user: AuthUser, chatHistory: any[] = []): Observable<string> {
         const subject = new Subject<string>();
 
         (async () => {
@@ -296,7 +296,8 @@ ${employeeList}
                 await this.delay(800);
                 const lowerQuery = query.toLowerCase();
 
-                const found = employees.find(e =>
+                // 1. Find ALL employees that match
+                const matches = employees.filter(e =>
                     lowerQuery.includes(e.name.toLowerCase()) ||
                     lowerQuery.includes(e.nickname.toLowerCase()) ||
                     lowerQuery.includes(e.id || '') ||
@@ -305,28 +306,79 @@ ${employeeList}
 
                 const robotPrefix = user.gender === 1 ? 'אני עוזר חכם' : 'אני עוזרת חכמה';
                 let finalResponse = '';
-                if (found && found.id) {
-                    // In mock mode, we "simulate" fetching by calling the real service
-                    const data = await this.employeeDataService.getEmployeeData(found.id);
-                    if (data) {
-                        const genderGreeing = user.gender === 1 ? 'שלום אדוני' : 'שלום גבירתי';
-                        if (lowerQuery.includes('חופש')) {
-                            finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix} ואשמח לעזור.\n\n` +
-                                `🌴 **ימי חופשה של ${data.personalInfo.name}:**\n\n` +
-                                `• ימי חופשה שנותרו: **${data.timeOff.vacationBalance}** ימים\n` +
-                                `• ימים שנוצלו: **${data.timeOff.vacationUsed}** ימים`;
-                        } else if (lowerQuery.includes('שכר') || lowerQuery.includes('משכורת')) {
-                            const latest = data.salaryHistory[data.salaryHistory.length - 1];
-                            finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix}. השכר של ${data.personalInfo.name} הוא:\n\n` +
-                                `💰 **שכר ברוטו:** **₪${latest.grossSalary.toLocaleString()}**`;
+
+                // Case: Ambiguous matches (more than 1)
+                // Case: Ambiguous matches (more than 1)
+                if (matches.length > 1) {
+                    finalResponse = `🤔 ${robotPrefix}. אני רואה שיש במערכת ${matches.length} עובדים עם השם הזה. כדי שאוכל לתת לך את המידע הנכון, למי מהם התכוונת?\n\n`;
+                    matches.forEach(m => {
+                        finalResponse += `🔹 **${m.nickname}** (מספר עובד: ${m.number})\n`;
+                    });
+                    finalResponse += `\nאנא ציין את **הכינוי** או **מספר העובד** הרצוי.`;
+                }
+                // Case: Single match
+                else if (matches.length === 1) {
+                    const found = matches[0];
+                    if (found && found.id) {
+                        const data = await this.employeeDataService.getEmployeeData(found.id);
+                        if (data) {
+                            const genderGreeing = user.gender === 1 ? 'שלום אדוני' : 'שלום גבירתי';
+                            if (lowerQuery.includes('חופש')) {
+                                finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix} ואשמח לעזור.\n\n` +
+                                    `🌴 **ימי חופשה של ${data.personalInfo.name} (${data.personalInfo.number}):**\n\n` +
+                                    `• ימי חופשה שנותרו: **${data.timeOff.vacationBalance}** ימים\n` +
+                                    `• ימים שנוצלו: **${data.timeOff.vacationUsed}** ימים`;
+                            } else if (lowerQuery.includes('שכר') || lowerQuery.includes('משכורת')) {
+                                const latest = data.salaryHistory[data.salaryHistory.length - 1];
+                                finalResponse = `${genderGreeing} ${user.nickname}. ${robotPrefix}. השכר של ${data.personalInfo.name} (${data.personalInfo.number}) הוא:\n\n` +
+                                    `💰 **שכר ברוטו:** **₪${latest.grossSalary.toLocaleString()}**`;
+                            } else {
+                                finalResponse = `✅ ${robotPrefix}. מצאתי את העובד:\n**${data.personalInfo.name}**\nמס' עובד: **${data.personalInfo.number}**\nתפקיד: **${data.personalInfo.roleName}**`;
+                            }
                         } else {
-                            finalResponse = `✅ ${robotPrefix}. מצאתי את העובד:\n**${data.personalInfo.name}** (מספר עובד: **${data.id}**)`;
+                            finalResponse = `❌ ${robotPrefix}. לא הצלחתי לשלוף נתונים עבור העובד: ${found.name}`;
+                        }
+                    }
+                }
+                // Case: No direct matches, try context
+                else if (chatHistory.length > 0) {
+                    // Look backwards for the last employee mentioned in assistant messages
+                    let foundContext: AuthorizedEmployee | undefined;
+                    for (let i = chatHistory.length - 1; i >= 0; i--) {
+                        const msg = chatHistory[i].message.toLowerCase();
+                        // Find matches in history
+                        const historyMatches = employees.filter(e =>
+                            msg.includes(e.name.toLowerCase()) ||
+                            msg.includes(e.nickname.toLowerCase())
+                        );
+
+                        // If we found exactly one in a previous message, assume context
+                        if (historyMatches.length === 1) {
+                            foundContext = historyMatches[0];
+                            break;
+                        }
+                    }
+
+                    if (foundContext && foundContext.id) {
+                        const data = await this.employeeDataService.getEmployeeData(foundContext.id);
+                        if (data) {
+                            const genderGreeing = user.gender === 1 ? 'שלום אדוני' : 'שלום גבירתי';
+                            if (lowerQuery.includes('חופש')) {
+                                finalResponse = `${genderGreeing} ${user.nickname}. בהמשך לשיחתנו על ${foundContext.name}:\n\n` +
+                                    `• ימי חופשה שנותרו: **${data.timeOff.vacationBalance}** ימים`;
+                            } else if (lowerQuery.includes('שכר') || lowerQuery.includes('משכורת')) {
+                                const latest = data.salaryHistory[data.salaryHistory.length - 1];
+                                finalResponse = `${genderGreeing} ${user.nickname}. השכר של ${foundContext.name} הוא:\n\n` +
+                                    `💰 **שכר ברוטו:** **₪${latest.grossSalary.toLocaleString()}**`;
+                            } else {
+                                finalResponse = `אני מבין שאתה שואל עדיין על **${foundContext.name}**. איך אוכל לעזור עוד?`;
+                            }
                         }
                     } else {
-                        finalResponse = `❌ ${robotPrefix}. לא הצלחתי לשלוף נתונים עבור העובד: ${found.name}`;
+                        finalResponse = `❌ ${robotPrefix}. לא נמצא עובד מתאים במערכת עבור: "${query}"\n\nאולי התכוונת לאחד מהעובדים ברשימה?`;
                     }
                 } else {
-                    finalResponse = `❌ ${robotPrefix}. לא נמצא עובד מתאים במערכת עבור: "${query}"`;
+                    finalResponse = `❌ ${robotPrefix}. לא נמצא עובד מתאים במערכת עבור: "${query}"\n\nאולי התכוונת לאחד מהעובדים ברשימה?`;
                 }
 
                 const words = finalResponse.split(' ');
