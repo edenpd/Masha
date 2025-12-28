@@ -7,7 +7,6 @@ export interface CohereConfig {
     systemPrompt: string;
     apiUrl: string;
     tools?: any[];
-    documents?: any[];
 }
 
 @Injectable({
@@ -17,34 +16,56 @@ export class CohereService {
     private abortController: AbortController | null = null;
     private toolCache = new Map<string, any>();
 
+    private ensureJsonString(val: any): string {
+        if (!val) return '{}';
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (!trimmed) return '{}';
+            try {
+                JSON.parse(trimmed);
+                return trimmed;
+            } catch {
+                return JSON.stringify(trimmed);
+            }
+        }
+        return JSON.stringify(val);
+    }
+
     stopStream(): void {
         this.abortController?.abort();
         this.abortController = null;
     }
 
-    generateResponse(config: CohereConfig, query: string, chatHistory: any[] = []): Observable<string> {
+    generateResponse(config: CohereConfig, messages: any[]): Observable<string> {
         this.stopStream();
         this.abortController = new AbortController();
         const subject = new Subject<string>();
 
-        const initialBody = {
-            message: query,
+        const body = {
             model: config.modelName,
-            preamble: config.systemPrompt,
+            messages: messages,
             stream: true,
-            tools: config.tools,
-            documents: config.documents,
-            chat_history: chatHistory
+            tools: this.transformTools(config.tools)
         };
 
-        this.processRequest(config, initialBody, subject);
-
+        this.processRequest(config, body, subject);
         return subject.asObservable();
+    }
+
+    private transformTools(tools?: any[]): any[] | undefined {
+        if (!tools?.length) return undefined;
+        return tools.map(t => ({
+            type: 'function',
+            function: {
+                name: t.name,
+                description: t.description,
+                parameters: t.parameters || { type: 'object', properties: {}, required: [] }
+            }
+        }));
     }
 
     private async processRequest(config: CohereConfig, body: any, subject: Subject<string>): Promise<void> {
         try {
-            console.log('Sending Cohere Request:', body);
             const response = await fetch(config.apiUrl, {
                 method: 'POST',
                 headers: {
@@ -62,12 +83,11 @@ export class CohereService {
             }
 
             if (!response.body) throw new Error('Response body is null');
-
-            await this.readStream(response.body, config, body.message, body.chat_history || [], subject);
+            await this.readStream(response.body, config, body.messages, subject);
 
         } catch (error: any) {
             if (error.name !== 'AbortError') {
-                console.error('Cohere API Error:', error);
+                console.error('[Cohere V2] Error:', error);
                 subject.error(error);
             } else {
                 subject.complete();
@@ -78,36 +98,72 @@ export class CohereService {
     private async readStream(
         stream: ReadableStream<Uint8Array>,
         config: CohereConfig,
-        originalQuery: string,
-        chatHistory: any[],
+        previousMessages: any[],
         subject: Subject<string>
     ): Promise<void> {
         const reader = stream.getReader();
         const decoder = new TextDecoder();
-        let toolCalls: any[] = [];
+
+        const toolCallsMap = new Map<number, any>();
+        let assistantMsgForFollowup: any = null;
+        let buffer = '';
 
         try {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const lines = decoder.decode(value, { stream: true }).split('\n');
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     try {
                         const parsed = JSON.parse(line);
 
-                        if (parsed.event_type === 'text-generation') {
-                            subject.next(parsed.text);
-                        } else if (parsed.event_type === 'tool-calls-generation') {
-                            toolCalls = parsed.tool_calls;
-                        } else if (parsed.event_type === 'stream-end') {
-                            if (toolCalls.length > 0) {
-                                await this.handleToolCalls(toolCalls, config, originalQuery, chatHistory, subject);
-                                return; // Stop here, handleToolCalls will continue the flow
-                            }
-                            subject.complete();
-                            return;
+                        switch (parsed.type) {
+                            case 'content-delta':
+                                const text = parsed.delta?.message?.content?.text;
+                                if (text) subject.next(text);
+                                break;
+
+                            case 'tool-call-start':
+                                const deltaStart = parsed.delta?.message?.tool_calls;
+                                if (deltaStart) {
+                                    toolCallsMap.set(parsed.index, {
+                                        id: deltaStart.id,
+                                        name: deltaStart.function.name,
+                                        arguments: deltaStart.function.arguments || ''
+                                    });
+                                }
+                                break;
+
+                            case 'tool-call-delta':
+                                const deltaArgs = parsed.delta?.message?.tool_calls?.function?.arguments;
+                                const call = toolCallsMap.get(parsed.index);
+                                if (call && deltaArgs) {
+                                    call.arguments += deltaArgs;
+                                }
+                                break;
+
+                            case 'message-end':
+                                assistantMsgForFollowup = parsed.message;
+                                const toolCalls = Array.from(toolCallsMap.values());
+
+                                if (toolCalls.length > 0) {
+                                    await this.handleToolCalls(toolCalls, assistantMsgForFollowup, config, previousMessages, subject);
+                                    reader.cancel();
+                                    return;
+                                }
+                                subject.complete();
+                                reader.cancel();
+                                return;
+
+                            case 'stream-end':
+                                subject.complete();
+                                reader.cancel();
+                                return;
                         }
                     } catch (e) { continue; }
                 }
@@ -120,45 +176,63 @@ export class CohereService {
 
     private async handleToolCalls(
         toolCalls: any[],
+        assistantMessage: any,
         config: CohereConfig,
-        originalQuery: string,
-        chatHistory: any[],
+        previousMessages: any[],
         subject: Subject<string>
     ): Promise<void> {
         const toolResults = await Promise.all(toolCalls.map(async (call) => {
-            const cacheKey = `${call.name}:${JSON.stringify(call.parameters)}`;
+            const safeArgs = this.ensureJsonString(call.arguments);
+            const cacheKey = `${call.name}:${safeArgs}`;
 
             if (this.toolCache.has(cacheKey)) {
-                console.log(`[Cache Hit] Tool: ${call.name}`);
-                return { call, outputs: this.toolCache.get(cacheKey) };
+                return {
+                    role: 'tool',
+                    tool_call_id: call.id,
+                    content: JSON.stringify(this.toolCache.get(cacheKey))
+                };
             }
 
             const tool = config.tools?.find(t => t.name === call.name);
-            let outputs = [{ error: `Tool ${call.name} not found or handler missing` }];
+            let result: any = { error: `Tool ${call.name} not found` };
 
             if (tool?.handler) {
                 try {
-                    const result = await tool.handler(call.parameters);
-                    outputs = Array.isArray(result) ? result : [result];
-                    this.toolCache.set(cacheKey, outputs);
+                    const params = JSON.parse(safeArgs);
+                    const output = await tool.handler(params);
+                    result = Array.isArray(output) ? output : [output];
+                    this.toolCache.set(cacheKey, result);
                 } catch (err) {
-                    console.error(`Tool ${call.name} execution failed:`, err);
-                    outputs = [{ error: `Execution failed: ${err}` }];
+                    result = { error: `Execution failed: ${err}` };
                 }
             }
-            return { call, outputs };
+
+            return {
+                role: 'tool',
+                tool_call_id: call.id,
+                content: JSON.stringify(result)
+            };
         }));
 
-        // Send second request with results
         const nextBody = {
-            message: originalQuery,
             model: config.modelName,
-            preamble: config.systemPrompt,
+            messages: [
+                ...previousMessages,
+                {
+                    role: 'assistant',
+                    tool_calls: (assistantMessage?.tool_calls || toolCalls).map((tc: any) => ({
+                        id: tc.id || tc.tool_call_id,
+                        type: 'function',
+                        function: {
+                            name: tc.name || tc.function?.name,
+                            arguments: this.ensureJsonString(tc.arguments || tc.function?.arguments)
+                        }
+                    }))
+                },
+                ...toolResults
+            ],
             stream: true,
-            tools: config.tools,
-            tool_results: toolResults,
-            chat_history: chatHistory,
-            force_single_step: true // Required for step 2
+            tools: this.transformTools(config.tools)
         };
 
         await this.processRequest(config, nextBody, subject);

@@ -40,9 +40,9 @@ export interface AppStoreState {
 
 const initialState: AppStoreState = {
     apiKey: environment.cohereApiKey,
-    modelName: 'command-a-03-2025',
+    modelName: 'command-r-08-2024',
     systemPrompt: 'אתה עוזר משאבי אנוש',
-    apiUrl: 'https://api.cohere.com/v1/chat',
+    apiUrl: 'https://api.cohere.com/v2/chat',
     tools: [
         {
             name: "get_tax_rate",
@@ -125,8 +125,25 @@ export const AppStore = signalStore(
 
             clearChat: () => patchState(store, { messages: [] }),
             stopRequest() {
-                msgSubscription?.unsubscribe();
+                if (msgSubscription) {
+                    msgSubscription.unsubscribe();
+                    msgSubscription = null;
+                }
                 cohereService.stopStream();
+
+                // Mark the last message as stopped by user
+                const messages = store.messages();
+                const lastIdx = messages.length - 1;
+                if (lastIdx >= 0 && messages[lastIdx].type === 'assistant') {
+                    const updated = [...messages];
+                    updated[lastIdx] = {
+                        ...updated[lastIdx],
+                        content: updated[lastIdx].content + '\n*(הופסק על ידי המשתמש)*',
+                        isTyping: false
+                    };
+                    patchState(store, { messages: updated });
+                }
+
                 patchState(store, { isProcessing: false });
             },
 
@@ -136,9 +153,9 @@ export const AppStore = signalStore(
 
                 const now = new Date();
                 const userMsg: ChatMessage = { type: 'user', content, id: crypto.randomUUID(), timestamp: now };
-                const assistantMsg: ChatMessage = { type: 'assistant', content: '', id: crypto.randomUUID(), timestamp: now, isTyping: true };
+                const assistantMsgId = crypto.randomUUID();
+                const assistantMsg: ChatMessage = { type: 'assistant', content: '', id: assistantMsgId, timestamp: now, isTyping: true };
 
-                // Update State: Add User & Temp Assistant Message
                 patchState(store, { messages: [...store.messages(), userMsg, assistantMsg] });
 
                 const config = {
@@ -150,32 +167,48 @@ export const AppStore = signalStore(
                     documents: store.documents(),
                 };
 
-                const chatHistory = store.messages().slice(0, -2).map(m => ({
-                    role: m.type === 'user' ? 'USER' : 'CHATBOT',
-                    message: m.content
-                }));
+                const messages = [
+                    { role: 'system', content: store.systemPrompt() },
+                    ...store.messages().slice(0, -2).map(m => ({
+                        role: m.type,
+                        content: m.content
+                    })),
+                    { role: 'user', content }
+                ];
 
-                msgSubscription = cohereService.generateResponse(config, content, chatHistory).subscribe({
-                    next: (chunk) => {
-                        const messages = store.messages();
-                        const idx = messages.findIndex(m => m.id === assistantMsg.id);
-                        if (idx !== -1) {
-                            const updated = [...messages];
-                            updated[idx] = { ...updated[idx], content: updated[idx].content + chunk, isTyping: false };
-                            patchState(store, { messages: updated });
-                        }
+                msgSubscription = cohereService.generateResponse(config, messages).subscribe({
+                    next: (chunk: string) => {
+                        patchState(store, (state) => {
+                            const msgs = [...state.messages];
+                            const last = msgs[msgs.length - 1];
+                            if (last && last.id === assistantMsgId) {
+                                msgs[msgs.length - 1] = { ...last, content: last.content + chunk };
+                                return { messages: msgs };
+                            }
+                            return state;
+                        });
                     },
-                    error: (err) => {
+                    error: (err: any) => {
+                        // Ignore AbortError as it's handled by stopRequest
+                        if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort')) {
+                            return;
+                        }
                         console.error('Chat Error:', err);
-                        const messages = store.messages();
-                        const idx = messages.findIndex(m => m.id === assistantMsg.id);
-                        if (idx !== -1) {
-                            const updated = [...messages];
-                            updated[idx] = { ...updated[idx], content: updated[idx].content + '\n[Error]', isTyping: false };
-                            patchState(store, { messages: updated, isProcessing: false });
-                        }
+                        patchState(store, (state) => ({
+                            isProcessing: false,
+                            messages: state.messages.map(m =>
+                                m.id === assistantMsgId ? { ...m, content: m.content + '\n[Error]', isTyping: false } : m
+                            )
+                        }));
                     },
-                    complete: () => patchState(store, { isProcessing: false })
+                    complete: () => {
+                        patchState(store, (state) => ({
+                            isProcessing: false,
+                            messages: state.messages.map(m =>
+                                m.id === assistantMsgId ? { ...m, isTyping: false } : m
+                            )
+                        }));
+                    }
                 });
             },
 

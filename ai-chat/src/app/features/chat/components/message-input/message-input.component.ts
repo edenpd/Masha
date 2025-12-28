@@ -1,4 +1,4 @@
-import { Component, inject, signal, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject, signal, ElementRef, ViewChild, effect } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AppStore } from '../../../../store/app.store';
@@ -26,11 +26,12 @@ import { AppStore } from '../../../../store/app.store';
                 [(ngModel)]="inputValue"
                 name="message"
                 [placeholder]="store.inputPlaceholder()"
-                [disabled]="store.isProcessing()"
+                [readonly]="store.isProcessing()"
                 (keydown)="onKeyDown($event)"
                 rows="1"
                 class="w-full bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
                 [class.opacity-50]="store.isProcessing()"
+                [class.cursor-not-allowed]="store.isProcessing()"
               ></textarea>
             </div>
 
@@ -148,6 +149,14 @@ export class MessageInputComponent {
   protected readonly store = inject(AppStore);
 
   @ViewChild('inputField') private inputField!: ElementRef<HTMLTextAreaElement>;
+
+  constructor() {
+    effect(() => {
+      if (!this.store.isProcessing()) {
+        setTimeout(() => this.inputField?.nativeElement?.focus(), 0);
+      }
+    });
+  }
 
   protected inputValue = signal('');
   protected showSuggestions = signal(false);

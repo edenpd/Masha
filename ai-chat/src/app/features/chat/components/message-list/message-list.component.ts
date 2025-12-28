@@ -50,16 +50,6 @@ import { ChatMessage } from '../../../../models';
               <!-- Assistant Message - Left side, icon on far left -->
               <div class="flex gap-3 w-full justify-end">
                 <div class="max-w-[85%] bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
-                  @if (message.relatedEmployee) {
-                    <div class="flex items-center gap-2 mb-3 pb-3 border-b border-black/5 dark:border-white/10">
-                      <img 
-                        [src]="message.relatedEmployee.imageUrl" 
-                        [alt]="message.relatedEmployee.name"
-                        class="w-6 h-6 rounded-full"
-                      />
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Info: {{ message.relatedEmployee.name }}</span>
-                    </div>
-                  }
                   <div 
                     class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
