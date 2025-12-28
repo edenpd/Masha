@@ -30,8 +30,8 @@ import { ChatMessage } from '../../../../models';
                   <p class="text-xs text-gray-500 dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
                 </div>
               </div>
-            } @else if (message.isTyping) {
-              <!-- Typing Indicator - Left side, icon on far left -->
+            } @else if (message.isTyping && !message.content) {
+              <!-- Typing Indicator - Only show if NO content yet -->
               <div class="flex gap-3 w-full justify-end">
                 <div class="inline-block bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
                   <div class="flex gap-1.5">
@@ -54,6 +54,13 @@ import { ChatMessage } from '../../../../models';
                     class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
                   ></div>
+                  @if (message.isTyping) {
+                    <div class="flex gap-1 mt-2">
+                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse"></div>
+                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse" style="animation-delay: 200ms"></div>
+                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse" style="animation-delay: 400ms"></div>
+                    </div>
+                  }
                   <p class="text-xs text-gray-500 mt-3">{{ formatTime(message.timestamp) }}</p>
                 </div>
                 <div class="flex-shrink-0">

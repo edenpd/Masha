@@ -9,7 +9,7 @@ import {
 } from '@ngrx/signals';
 import { ChatMessage } from '../models';
 import { environment } from 'src/environments/environment';
-import { CohereService } from '../core/services';
+import { CohereService } from '../core/services/cohere.service';
 
 export interface AppStoreState {
     // Config
@@ -176,8 +176,10 @@ export const AppStore = signalStore(
                     { role: 'user', content }
                 ];
 
+                console.log('[AppStore] Starting request to Cohere');
                 msgSubscription = cohereService.generateResponse(config, messages).subscribe({
                     next: (chunk: string) => {
+                        console.log('[AppStore] Chunk:', chunk);
                         patchState(store, (state) => {
                             const msgs = [...state.messages];
                             const last = msgs[msgs.length - 1];

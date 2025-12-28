@@ -48,6 +48,7 @@ export class CohereService {
             tools: this.transformTools(config.tools)
         };
 
+        console.log('[Cohere V2] Request Body:', JSON.stringify(body, null, 2));
         this.processRequest(config, body, subject);
         return subject.asObservable();
     }
@@ -70,8 +71,7 @@ export class CohereService {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${config.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(body),
                 signal: this.abortController?.signal
@@ -79,10 +79,12 @@ export class CohereService {
 
             if (!response.ok) {
                 const error = await response.text();
+                console.error('[Cohere V2] API Error Response:', error);
                 throw new Error(`API Error ${response.status}: ${error}`);
             }
 
             if (!response.body) throw new Error('Response body is null');
+            console.log('[Cohere V2] Stream opened');
             await this.readStream(response.body, config, body.messages, subject);
 
         } catch (error: any) {
@@ -90,6 +92,7 @@ export class CohereService {
                 console.error('[Cohere V2] Error:', error);
                 subject.error(error);
             } else {
+                console.log('[Cohere V2] Stream aborted by user');
                 subject.complete();
             }
         }
@@ -107,24 +110,44 @@ export class CohereService {
         const toolCallsMap = new Map<number, any>();
         let assistantMsgForFollowup: any = null;
         let buffer = '';
+        let currentEventType: string | null = null;
 
         try {
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    console.log('[Cohere V2] Stream reader done');
+                    break;
+                }
 
-                buffer += decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
-                    if (!line.trim()) continue;
-                    try {
-                        const parsed = JSON.parse(line);
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
 
-                        switch (parsed.type) {
+                    if (trimmed.startsWith('event:')) {
+                        currentEventType = trimmed.substring(6).trim();
+                        continue;
+                    }
+
+                    try {
+                        const cleanLine = trimmed.startsWith('data: ') ? trimmed.substring(6) : trimmed;
+
+                        // Only try to parse if it looks like a JSON object
+                        if (!cleanLine.startsWith('{')) continue;
+
+                        const parsed = JSON.parse(cleanLine);
+                        const eventType = parsed.type || currentEventType;
+                        console.log('[Cohere V2] Event Type:', eventType);
+
+                        switch (eventType) {
                             case 'content-delta':
-                                const text = parsed.delta?.message?.content?.text;
+                            case 'text-generation':
+                                const text = parsed.delta?.message?.content?.text || parsed.text;
                                 if (text) subject.next(text);
                                 break;
 
@@ -152,6 +175,7 @@ export class CohereService {
                                 const toolCalls = Array.from(toolCallsMap.values());
 
                                 if (toolCalls.length > 0) {
+                                    console.log('[Cohere V2] Processing Tool Calls:', toolCalls.length);
                                     await this.handleToolCalls(toolCalls, assistantMsgForFollowup, config, previousMessages, subject);
                                     reader.cancel();
                                     return;
@@ -161,11 +185,15 @@ export class CohereService {
                                 return;
 
                             case 'stream-end':
+                                console.log('[Cohere V2] Stream ended by server');
                                 subject.complete();
                                 reader.cancel();
                                 return;
                         }
-                    } catch (e) { continue; }
+                    } catch (e) {
+                        console.warn('[Cohere V2] JSON parse error:', e, 'on line:', trimmed);
+                        continue;
+                    }
                 }
             }
             subject.complete();
@@ -235,6 +263,7 @@ export class CohereService {
             tools: this.transformTools(config.tools)
         };
 
+        console.log('[Cohere V2] Next Request Body:', JSON.stringify(nextBody, null, 2));
         await this.processRequest(config, nextBody, subject);
     }
 }
