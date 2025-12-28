@@ -1,34 +1,35 @@
-import { Component, inject } from '@angular/core';
-
-import { AppStore } from '../../../../store/app.store';
+import { Component, inject, ViewEncapsulation } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AiChatStore } from '../../store/ai-chat.store';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { MessageInputComponent } from '../message-input/message-input.component';
 
 @Component({
-  selector: 'app-chat-window',
+  selector: 'ai-chat-window',
   standalone: true,
-  imports: [MessageListComponent, MessageInputComponent],
+  imports: [CommonModule, MessageListComponent, MessageInputComponent],
   template: `
     <div class="flex-1 flex flex-col h-full">
-      <!-- Messages Area -->
       <div class="flex-1 overflow-hidden">
-        <app-message-list />
+        <ai-message-list />
       </div>
       
-      <!-- Input Area -->
       <div class="border-t border-black/5 dark:border-white/5 p-4 bg-slate-200/50 dark:bg-deep-800/50 transition-colors duration-300">
-        <app-message-input />
+        <ai-message-input />
       </div>
     </div>
   `,
+  encapsulation: ViewEncapsulation.None,
   styles: [`
     :host {
       display: flex;
       flex-direction: column;
       height: 100%;
+      width: 100%;
+      flex: 1;
     }
   `]
 })
 export class ChatWindowComponent {
-  protected readonly store = inject(AppStore);
+  protected readonly store = inject(AiChatStore);
 }

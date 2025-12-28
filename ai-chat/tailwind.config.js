@@ -2,6 +2,7 @@
 module.exports = {
     content: [
         "./src/**/*.{html,ts}",
+        "./projects/ai-chat/**/*.{html,ts}",
     ],
     darkMode: 'class',
     theme: {

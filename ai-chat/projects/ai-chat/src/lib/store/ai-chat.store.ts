@@ -8,27 +8,27 @@ import {
     patchState
 } from '@ngrx/signals';
 import { ChatMessage } from '../models';
-import { environment } from 'src/environments/environment';
-import { CohereService } from '../core/services/cohere.service';
+import { CohereService } from '../services/cohere.service';
 
-export interface AppStoreState {
-    // Config
-    apiKey: string;
-    modelName: string;
+export interface AiChatConfig {
     systemPrompt: string;
-    apiUrl: string;
-    tools: any[];
-    documents: any[];
-    mode: 'embedded' | 'popover';
-    userPhoto: string;
-    isDarkMode: boolean;
-    inputPlaceholder: string;
-    emptyChatTitle: string;
-    emptyChatSubtitle: string;
-    questionSuggestions: string[];
-    startMessage: string;
-    title: string;
+    apiKey?: string;
+    modelName?: string;
+    apiUrl?: string;
+    tools?: any[];
+    documents?: any[];
+    mode?: 'embedded' | 'popover';
+    userPhoto?: string;
+    isDarkMode?: boolean;
+    inputPlaceholder?: string;
+    emptyChatTitle?: string;
+    emptyChatSubtitle?: string;
+    questionSuggestions?: string[];
+    startMessage?: string;
+    title?: string;
+}
 
+export interface AiChatState extends Required<AiChatConfig> {
     // Chat
     messages: ChatMessage[];
     isProcessing: boolean;
@@ -39,23 +39,12 @@ export interface AppStoreState {
     error: string | null;
 }
 
-const initialState: AppStoreState = {
-    apiKey: environment.cohereApiKey,
+const initialState: AiChatState = {
+    apiKey: '',
     modelName: 'command-r-08-2024',
-    systemPrompt: 'אתה עוזר משאבי אנוש',
+    systemPrompt: '', // Required by user, so we expect it to be provided
     apiUrl: 'https://api.cohere.com/v2/chat',
-    tools: [
-        {
-            name: "get_tax_rate",
-            description: "כדי לקבל נתונים מפורטים על ענייני מס",
-            handler: (params: {}) => ({ result: "המס בישראל הוא 40%" })
-        },
-        {
-            name: "get_pension",
-            description: "כדי לקבל נתונים מפורטים על ענייני פנסיה",
-            handler: (params: {}) => ({ result: "בישראל מקבלים פנסיה 50 שקל ביום" })
-        }
-    ],
+    tools: [],
     documents: [],
     mode: 'embedded',
     userPhoto: 'https://ui-avatars.com/api/?name=User',
@@ -65,7 +54,7 @@ const initialState: AppStoreState = {
     emptyChatSubtitle: 'שאל אותי משהו...',
     questionSuggestions: [],
     startMessage: 'היי! איך אפשר לעזור לך היום?',
-    title: 'Masha AI',
+    title: 'AI Chat',
 
     messages: [],
     isProcessing: false,
@@ -74,7 +63,7 @@ const initialState: AppStoreState = {
     error: null,
 };
 
-export const AppStore = signalStore(
+export const AiChatStore = signalStore(
     { providedIn: 'root' },
     withState(initialState),
 
@@ -87,9 +76,6 @@ export const AppStore = signalStore(
         const cohereService = inject(CohereService);
         let msgSubscription: Subscription | null = null;
 
-        /**
-         * Core UI Helpers
-         */
         const updateTheme = (isDark: boolean) => {
             const root = document.documentElement.classList;
             isDark ? root.add('dark') : root.remove('dark');
@@ -108,10 +94,7 @@ export const AppStore = signalStore(
         };
 
         return {
-            /** 
-             * Configuration & UI State 
-             */
-            updateConfig(config: Partial<AppStoreState>) {
+            updateConfig(config: Partial<AiChatState>) {
                 patchState(store, config);
                 if (config.isDarkMode !== undefined) updateTheme(config.isDarkMode);
             },
@@ -125,9 +108,6 @@ export const AppStore = signalStore(
             toggleChat: () => patchState(store, { isOpen: !store.isOpen() }),
             setIsOpen: (isOpen: boolean) => patchState(store, { isOpen }),
 
-            /**
-             * Chat Operations
-             */
             clearChat: () => patchState(store, { messages: [] }),
 
             stopRequest() {
@@ -177,7 +157,7 @@ export const AppStore = signalStore(
                     next: (chunk: string) => appendToAssistantMsg(assistantMsgId, chunk),
                     error: (err: any) => {
                         if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort')) return;
-                        console.error('[AppStore] Chat Error:', err);
+                        console.error('[AiChatStore] Chat Error:', err);
                         appendToAssistantMsg(assistantMsgId, '\n[Error]');
                         updateAssistantMsg(assistantMsgId, { isTyping: false });
                         patchState(store, { isProcessing: false });
@@ -189,24 +169,8 @@ export const AppStore = signalStore(
                 });
             },
 
-            async initialize() {
+            initialize() {
                 if (store.isDarkMode()) updateTheme(true);
-
-                // If core config is missing, fetch defaults from mock API
-                if (!store.apiKey() || !store.modelName() || !store.apiUrl()) {
-                    patchState(store, { isLoading: true });
-
-                    // Mock API request delay
-                    await new Promise(resolve => setTimeout(resolve, 800));
-
-                    patchState(store, {
-                        apiKey: store.apiKey() || environment.cohereApiKey,
-                        modelName: store.modelName() || 'command-r-08-2024',
-                        apiUrl: store.apiUrl() || 'https://api.cohere.com/v2/chat',
-                        isLoading: false
-                    });
-                }
-
                 if (store.startMessage() && store.messages().length === 0) {
                     const startMsg = { type: 'assistant', content: store.startMessage(), id: crypto.randomUUID(), timestamp: new Date() } as ChatMessage;
                     patchState(store, { messages: [startMsg] });

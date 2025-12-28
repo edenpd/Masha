@@ -1,6 +1,3 @@
-/**
- * Chat Message Model
- */
 export interface ChatMessage {
     id: string;
     content: string;

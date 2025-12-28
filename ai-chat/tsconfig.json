@@ -33,6 +33,9 @@
             ],
             "@store/*": [
                 "src/app/store/*"
+            ],
+            "ai-chat": [
+                "./projects/ai-chat/src/public-api.ts"
             ]
         }
     },
@@ -41,5 +44,6 @@
         "strictInjectionParameters": true,
         "strictInputAccessModifiers": true,
         "strictTemplates": true
-    }
+    },
+    "references": []
 }

@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStore } from '../../../../store/app.store';
+import { AiChatStore } from '../../store/ai-chat.store';
 
 @Component({
-  selector: 'app-chat-button',
+  selector: 'ai-chat-button',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -14,9 +14,7 @@ import { AppStore } from '../../../../store/app.store';
     >
       <div class="absolute inset-0 rounded-full bg-synapse-400 opacity-20 group-hover:animate-ping"></div>
       
-      <!-- Icons Container -->
       <div class="relative w-8 h-8 flex items-center justify-center">
-        <!-- Close Icon -->
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
           class="w-8 h-8 text-white absolute transition-all duration-500 ease-out"
@@ -31,7 +29,6 @@ import { AppStore } from '../../../../store/app.store';
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
 
-        <!-- Chat Icon -->
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
           class="w-8 h-8 text-white absolute transition-all duration-500 ease-out"
@@ -48,6 +45,7 @@ import { AppStore } from '../../../../store/app.store';
       </div>
     </button>
   `,
+  encapsulation: ViewEncapsulation.None,
   styles: [`
     :host {
       display: block;
@@ -55,5 +53,5 @@ import { AppStore } from '../../../../store/app.store';
   `]
 })
 export class ChatButtonComponent {
-  protected readonly store = inject(AppStore);
+  protected readonly store = inject(AiChatStore);
 }

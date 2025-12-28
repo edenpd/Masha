@@ -1,25 +1,22 @@
-import { Component, inject, signal, ElementRef, ViewChild, effect } from '@angular/core';
-
+import { Component, inject, signal, ElementRef, ViewChild, effect, ViewEncapsulation } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AppStore } from '../../../../store/app.store';
+import { AiChatStore } from '../../store/ai-chat.store';
 
 @Component({
-  selector: 'app-message-input',
+  selector: 'ai-message-input',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="max-w-4xl mx-auto">
       <form (submit)="onSubmit($event)" class="relative">
-        <!-- Main Input Container -->
         <div class="relative group">
-          <!-- Glow effect on focus -->
           <div 
             class="absolute -inset-1 bg-gradient-to-r from-neural-500/20 via-synapse-500/20 to-matrix-500/20 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"
           ></div>
           
           <div class="relative flex items-end gap-3 bg-white dark:bg-deep-700/50 rounded-2xl border border-black/10 dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
             
-            <!-- Text Input -->
             <div class="flex-1 relative">
               <textarea
                 #inputField
@@ -35,9 +32,7 @@ import { AppStore } from '../../../../store/app.store';
               ></textarea>
             </div>
 
-            <!-- Quick Actions -->
             <div class="flex items-center gap-2 pb-2 pl-2">
-              <!-- Sample Questions Dropdown -->
               <div class="relative">
               @if (store.questionSuggestions().length > 0) {
                 <button 
@@ -74,7 +69,6 @@ import { AppStore } from '../../../../store/app.store';
                 }
               </div>
 
-              <!-- Control Button (Send or Stop) -->
               @if (store.isProcessing()) {
                 <button
                   type="button"
@@ -106,7 +100,6 @@ import { AppStore } from '../../../../store/app.store';
           </div>
         </div>
 
-        <!-- Keyboard Shortcut Hint -->
         <div class="flex justify-between items-center mt-2 px-2">
           <p class="text-xs text-gray-400">
             <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400">Enter</kbd>
@@ -125,30 +118,19 @@ import { AppStore } from '../../../../store/app.store';
       </form>
     </div>
   `,
+  encapsulation: ViewEncapsulation.None,
   styles: [`
     :host {
       display: block;
     }
-
-    textarea {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.1) transparent;
-    }
-
-    textarea::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    textarea::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.1);
-      border-radius: 2px;
-    }
   `]
 })
 export class MessageInputComponent {
-  protected readonly store = inject(AppStore);
-
+  protected readonly store = inject(AiChatStore);
   @ViewChild('inputField') private inputField!: ElementRef<HTMLTextAreaElement>;
+
+  protected inputValue = signal('');
+  protected showSuggestions = signal(false);
 
   constructor() {
     effect(() => {
@@ -157,10 +139,6 @@ export class MessageInputComponent {
       }
     });
   }
-
-  protected inputValue = signal('');
-  protected showSuggestions = signal(false);
-
 
   protected onSubmit(event: Event): void {
     event.preventDefault();
@@ -191,7 +169,6 @@ export class MessageInputComponent {
     this.store.processMessage(value);
     this.inputValue.set('');
 
-    // Auto-resize textarea
     if (this.inputField?.nativeElement) {
       this.inputField.nativeElement.style.height = 'auto';
     }

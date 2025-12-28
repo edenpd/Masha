@@ -1,25 +1,32 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { AppStore } from './store/app.store';
+import { Component } from '@angular/core';
+import { AiChatComponent } from 'ai-chat';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [AiChatComponent],
   template: `
-   <router-outlet />
+    <ai-chat [config]="chatConfig" [style]="{ height: '100vh', width: '100%', display: 'block' }" />
   `,
   styles: [`
     :host {
       display: block;
-      min-height: 100vh;
+      height: 100vh;
     }
   `]
 })
-export class AppComponent implements OnInit {
-  protected readonly store = inject(AppStore);
-
-  ngOnInit(): void {
-    this.store.initialize();
-  }
+export class AppComponent {
+  protected chatConfig = {
+    systemPrompt: 'אתה עוזר משאבי אנוש מקצועי',
+    apiKey: environment.cohereApiKey,
+    title: 'AI Chat Library',
+    mode: 'embedded' as const,
+    isDarkMode: true,
+    questionSuggestions: [
+      'איך עושים תיאום מס?',
+      'מהן ההפרשות לפנסיה?',
+      'איך מעדכנים פרטי בנק?'
+    ]
+  };
 }

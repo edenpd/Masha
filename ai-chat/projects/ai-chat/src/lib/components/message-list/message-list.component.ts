@@ -1,12 +1,11 @@
-import { Component, inject, ElementRef, ViewChild, AfterViewChecked, effect } from '@angular/core';
-
-import { AppStore } from '../../../../store/app.store';
-import { ChatMessage } from '../../../../models';
+import { Component, inject, ElementRef, ViewChild, AfterViewChecked, effect, ViewEncapsulation } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AiChatStore } from '../../store/ai-chat.store';
 
 @Component({
-  selector: 'app-message-list',
+  selector: 'ai-message-list',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   template: `
     <div 
       #scrollContainer
@@ -16,7 +15,6 @@ import { ChatMessage } from '../../../../models';
         @for (message of store.messages(); track message.id) {
           <div class="message-bubble mb-6">
             @if (message.type === 'user') {
-              <!-- User Message - Right side, icon on far right -->
               <div class="flex gap-3 w-full justify-start">
                 <div class="flex-shrink-0">
                     <img 
@@ -31,7 +29,6 @@ import { ChatMessage } from '../../../../models';
                 </div>
               </div>
             } @else if (message.isTyping && !message.content) {
-              <!-- Typing Indicator - Only show if NO content yet -->
               <div class="flex gap-3 w-full justify-end">
                 <div class="inline-block bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
                   <div class="flex gap-1.5">
@@ -47,7 +44,6 @@ import { ChatMessage } from '../../../../models';
                 </div>
               </div>
             } @else {
-              <!-- Assistant Message - Left side, icon on far left -->
               <div class="flex gap-3 w-full justify-end">
                 <div class="max-w-[85%] bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
                   <div 
@@ -65,7 +61,6 @@ import { ChatMessage } from '../../../../models';
             }
           </div>
         } @empty {
-          <!-- Empty State -->
           <div class="flex flex-col items-center justify-center h-full py-20 text-center">
             <div class="w-20 h-20 rounded-2xl bg-black/5 dark:bg-neural-500/20 flex items-center justify-center mb-6">
               <span class="text-4xl">💬</span>
@@ -77,37 +72,24 @@ import { ChatMessage } from '../../../../models';
       </div>
     </div>
   `,
+  encapsulation: ViewEncapsulation.None,
   styles: [`
     :host {
       display: block;
       height: 100%;
-    }
-
-    .prose :deep(strong) {
-      @apply text-neural-600 dark:text-neural-300 font-semibold;
-    }
-
-    .prose :deep(h2), .prose :deep(h3) {
-      @apply text-gray-900 dark:text-white font-bold mb-2;
-    }
-
-    .prose :deep(ul), .prose :deep(ol) {
-      @apply my-2 mr-4;
-    }
-
-    .prose :deep(li) {
-      @apply my-1;
+      width: 100%;
+      flex: 1;
+      overflow: hidden;
     }
   `]
 })
 export class MessageListComponent implements AfterViewChecked {
-  protected readonly store = inject(AppStore);
+  protected readonly store = inject(AiChatStore);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   private shouldScroll = true;
 
   constructor() {
-    // Effect to scroll on new messages
     effect(() => {
       const messages = this.store.messages();
       if (messages.length > 0) {
@@ -143,15 +125,10 @@ export class MessageListComponent implements AfterViewChecked {
   }
 
   protected formatMessage(content: string): string {
-    // Simple markdown-like formatting
     return content
-      // Bold text **text**
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Line breaks
       .replace(/\n/g, '<br>')
-      // Lists with bullets
       .replace(/^• /gm, '<span class="text-neural-400">•</span> ')
-      // Emoji preservation
       .replace(/([\u{1F300}-\u{1F9FF}])/gu, '<span class="text-2xl align-middle">$1</span>');
   }
 }
