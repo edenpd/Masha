@@ -57,7 +57,7 @@ const initialState: AppStoreState = {
         }
     ],
     documents: [],
-    mode: 'popover',
+    mode: 'embedded',
     userPhoto: 'https://ui-avatars.com/api/?name=User',
     isDarkMode: false,
     inputPlaceholder: 'במה ניתן לעזור?',
@@ -87,21 +87,33 @@ export const AppStore = signalStore(
         const cohereService = inject(CohereService);
         let msgSubscription: Subscription | null = null;
 
-        // Shared Helper
+        /**
+         * Core UI Helpers
+         */
         const updateTheme = (isDark: boolean) => {
             const root = document.documentElement.classList;
             isDark ? root.add('dark') : root.remove('dark');
         };
 
+        const updateAssistantMsg = (id: string, update: Partial<ChatMessage>) => {
+            patchState(store, (state) => ({
+                messages: state.messages.map(m => m.id === id ? { ...m, ...update } : m)
+            }));
+        };
+
+        const appendToAssistantMsg = (id: string, chunk: string) => {
+            patchState(store, (state) => ({
+                messages: state.messages.map(m => m.id === id ? { ...m, content: m.content + chunk } : m)
+            }));
+        };
+
         return {
+            /** 
+             * Configuration & UI State 
+             */
             updateConfig(config: Partial<AppStoreState>) {
                 patchState(store, config);
                 if (config.isDarkMode !== undefined) updateTheme(config.isDarkMode);
-            },
-
-            setIsDarkMode(isDark: boolean) {
-                patchState(store, { isDarkMode: isDark });
-                updateTheme(isDark);
             },
 
             toggleTheme() {
@@ -113,19 +125,11 @@ export const AppStore = signalStore(
             toggleChat: () => patchState(store, { isOpen: !store.isOpen() }),
             setIsOpen: (isOpen: boolean) => patchState(store, { isOpen }),
 
-            addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>) {
-                const msg = { ...message, id: crypto.randomUUID(), timestamp: new Date() };
-                patchState(store, { messages: [...store.messages(), msg] });
-                return msg.id;
-            },
-
-            updateMessage(id: string, updates: Partial<ChatMessage>) {
-                patchState(store, {
-                    messages: store.messages().map(m => m.id === id ? { ...m, ...updates } : m)
-                });
-            },
-
+            /**
+             * Chat Operations
+             */
             clearChat: () => patchState(store, { messages: [] }),
+
             stopRequest() {
                 if (msgSubscription) {
                     msgSubscription.unsubscribe();
@@ -133,19 +137,13 @@ export const AppStore = signalStore(
                 }
                 cohereService.stopStream();
 
-                // Mark the last message as stopped by user
                 const messages = store.messages();
                 const lastIdx = messages.length - 1;
                 if (lastIdx >= 0 && messages[lastIdx].type === 'assistant') {
-                    const updated = [...messages];
-                    updated[lastIdx] = {
-                        ...updated[lastIdx],
-                        content: updated[lastIdx].content + '\n*(הופסק על ידי המשתמש)*',
-                        isTyping: false
-                    };
-                    patchState(store, { messages: updated });
+                    const id = messages[lastIdx].id;
+                    appendToAssistantMsg(id, '\n*(הופסק על ידי המשתמש)*');
+                    updateAssistantMsg(id, { isTyping: false });
                 }
-
                 patchState(store, { isProcessing: false });
             },
 
@@ -169,49 +167,24 @@ export const AppStore = signalStore(
                     documents: store.documents(),
                 };
 
-                const messages = [
+                const history = [
                     { role: 'system', content: store.systemPrompt() },
-                    ...store.messages().slice(0, -2).map(m => ({
-                        role: m.type,
-                        content: m.content
-                    })),
+                    ...store.messages().slice(0, -2).map(m => ({ role: m.type, content: m.content })),
                     { role: 'user', content }
                 ];
 
-                console.log('[AppStore] Starting request to Cohere');
-                msgSubscription = cohereService.generateResponse(config, messages).subscribe({
-                    next: (chunk: string) => {
-                        console.log('[AppStore] Chunk:', chunk);
-                        patchState(store, (state) => {
-                            const msgs = [...state.messages];
-                            const last = msgs[msgs.length - 1];
-                            if (last && last.id === assistantMsgId) {
-                                msgs[msgs.length - 1] = { ...last, content: last.content + chunk };
-                                return { messages: msgs };
-                            }
-                            return state;
-                        });
-                    },
+                msgSubscription = cohereService.generateResponse(config, history).subscribe({
+                    next: (chunk: string) => appendToAssistantMsg(assistantMsgId, chunk),
                     error: (err: any) => {
-                        // Ignore AbortError as it's handled by stopRequest
-                        if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort')) {
-                            return;
-                        }
-                        console.error('Chat Error:', err);
-                        patchState(store, (state) => ({
-                            isProcessing: false,
-                            messages: state.messages.map(m =>
-                                m.id === assistantMsgId ? { ...m, content: m.content + '\n[Error]', isTyping: false } : m
-                            )
-                        }));
+                        if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort')) return;
+                        console.error('[AppStore] Chat Error:', err);
+                        appendToAssistantMsg(assistantMsgId, '\n[Error]');
+                        updateAssistantMsg(assistantMsgId, { isTyping: false });
+                        patchState(store, { isProcessing: false });
                     },
                     complete: () => {
-                        patchState(store, (state) => ({
-                            isProcessing: false,
-                            messages: state.messages.map(m =>
-                                m.id === assistantMsgId ? { ...m, isTyping: false } : m
-                            )
-                        }));
+                        updateAssistantMsg(assistantMsgId, { isTyping: false });
+                        patchState(store, { isProcessing: false });
                     }
                 });
             },
