@@ -189,8 +189,24 @@ export const AppStore = signalStore(
                 });
             },
 
-            initialize() {
+            async initialize() {
                 if (store.isDarkMode()) updateTheme(true);
+
+                // If core config is missing, fetch defaults from mock API
+                if (!store.apiKey() || !store.modelName() || !store.apiUrl()) {
+                    patchState(store, { isLoading: true });
+
+                    // Mock API request delay
+                    await new Promise(resolve => setTimeout(resolve, 800));
+
+                    patchState(store, {
+                        apiKey: store.apiKey() || environment.cohereApiKey,
+                        modelName: store.modelName() || 'command-r-08-2024',
+                        apiUrl: store.apiUrl() || 'https://api.cohere.com/v2/chat',
+                        isLoading: false
+                    });
+                }
+
                 if (store.startMessage() && store.messages().length === 0) {
                     const startMsg = { type: 'assistant', content: store.startMessage(), id: crypto.randomUUID(), timestamp: new Date() } as ChatMessage;
                     patchState(store, { messages: [startMsg] });
