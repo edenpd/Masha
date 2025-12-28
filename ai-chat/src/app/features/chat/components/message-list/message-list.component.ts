@@ -54,13 +54,6 @@ import { ChatMessage } from '../../../../models';
                     class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
                   ></div>
-                  @if (message.isTyping) {
-                    <div class="flex gap-1 mt-2">
-                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse"></div>
-                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse" style="animation-delay: 200ms"></div>
-                       <div class="w-1.5 h-1.5 rounded-full bg-synapse-400 animate-pulse" style="animation-delay: 400ms"></div>
-                    </div>
-                  }
                   <p class="text-xs text-gray-500 mt-3">{{ formatTime(message.timestamp) }}</p>
                 </div>
                 <div class="flex-shrink-0">
