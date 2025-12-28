@@ -27,6 +27,7 @@ export interface AppStoreState {
     emptyChatSubtitle: string;
     questionSuggestions: string[];
     startMessage: string;
+    title: string;
 
     // Chat
     messages: ChatMessage[];
@@ -64,6 +65,7 @@ const initialState: AppStoreState = {
     emptyChatSubtitle: 'שאל אותי משהו...',
     questionSuggestions: [],
     startMessage: 'היי! איך אפשר לעזור לך היום?',
+    title: 'Masha AI',
 
     messages: [],
     isProcessing: false,

@@ -49,7 +49,7 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center">
                   <span class="text-sm">🤖</span>
                 </div>
-                <span class="font-semibold text-gray-800 dark:text-white">Masha AI</span>
+                <span class="font-semibold text-gray-800 dark:text-white">{{ store.title() }}</span>
               </div>
               <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
