@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { trigger, transition, style, animate, state } from '@angular/animations';
 import { AppStore } from '../../store/app.store';
 import { ChatWindowComponent } from './components/chat-window/chat-window.component';
 import { ChatButtonComponent } from './components/chat-button/chat-button.component';
@@ -11,6 +12,19 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
     CommonModule,
     ChatWindowComponent,
     ChatButtonComponent
+  ],
+  animations: [
+    trigger('popoverScale', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.8) translateY(40px)', transformOrigin: 'bottom left' }),
+        animate('400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          style({ opacity: 0, transform: 'scale(0.8) translateY(40px)', transformOrigin: 'bottom left' }))
+      ])
+    ])
   ],
   template: `
     @if (store.mode() === 'embedded') {
@@ -26,7 +40,8 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
       <div class="fixed bottom-8 left-8 z-50 flex flex-col items-end gap-4 pointer-events-none">
         @if (store.isOpen()) {
           <div 
-            class="w-[600px] h-[600px] max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto transition-all duration-300 animate-in fade-in zoom-in slide-in-from-bottom-4"
+            @popoverScale
+            class="w-[600px] h-[600px] max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
           >
             <!-- Popover Header -->
             <div class="p-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
@@ -58,10 +73,6 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
   styles: [`
     :host {
       display: block;
-    }
-    
-    .animate-in {
-      animation-duration: 300ms;
     }
   `]
 })

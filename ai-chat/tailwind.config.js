@@ -68,11 +68,16 @@ module.exports = {
                 'slide-up': 'slideUp 0.4s ease-out',
                 'slide-in-right': 'slideInRight 0.3s ease-out',
                 'neural-pulse': 'neuralPulse 2s ease-in-out infinite',
+                'popover-in': 'popoverIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
             },
             keyframes: {
                 glow: {
                     '0%': { boxShadow: '0 0 20px rgba(12, 140, 233, 0.3)' },
                     '100%': { boxShadow: '0 0 40px rgba(217, 70, 239, 0.5)' },
+                },
+                popoverIn: {
+                    '0%': { opacity: '0', transform: 'scale(0.8) translateY(40px)' },
+                    '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
                 },
                 float: {
                     '0%, 100%': { transform: 'translateY(0px)' },
