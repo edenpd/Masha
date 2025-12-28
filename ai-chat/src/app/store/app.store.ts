@@ -56,7 +56,7 @@ const initialState: AppStoreState = {
         }
     ],
     documents: [],
-    mode: 'embedded',
+    mode: 'popover',
     userPhoto: 'https://ui-avatars.com/api/?name=User',
     isDarkMode: false,
     inputPlaceholder: 'במה ניתן לעזור?',
@@ -67,7 +67,7 @@ const initialState: AppStoreState = {
 
     messages: [],
     isProcessing: false,
-    isOpen: true,
+    isOpen: false,
     isLoading: false,
     error: null,
 };
