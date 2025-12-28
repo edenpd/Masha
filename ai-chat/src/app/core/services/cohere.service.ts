@@ -7,6 +7,7 @@ export interface CohereConfig {
     systemPrompt: string;
     apiUrl: string;
     tools?: any[];
+    documents?: any[];
 }
 
 @Injectable({
@@ -45,7 +46,8 @@ export class CohereService {
             model: config.modelName,
             messages: messages,
             stream: true,
-            tools: this.transformTools(config.tools)
+            tools: this.transformTools(config.tools),
+            documents: config.documents
         };
 
         console.log('[Cohere V2] Request Body:', JSON.stringify(body, null, 2));
