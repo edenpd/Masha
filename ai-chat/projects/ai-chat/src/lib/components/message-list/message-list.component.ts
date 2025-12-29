@@ -9,7 +9,7 @@ import { AiChatStore } from '../../store/ai-chat.store';
   template: `
     <div 
       #scrollContainer
-      class="h-full overflow-y-auto px-4 py-6 space-y-6 scroll-smooth transition-colors duration-300"
+      class="h-full min-h-0 overflow-y-auto px-4 py-6 space-y-6 scroll-smooth transition-colors duration-300"
     >
       <div class="max-w-4xl mx-auto">
         @for (message of store.messages(); track message.id) {

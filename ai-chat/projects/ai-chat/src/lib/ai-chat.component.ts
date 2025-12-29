@@ -30,8 +30,10 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
   template: `
     <div [class.dark]="store.isDarkMode()" class="h-full flex flex-col">
       @if (store.mode() === 'embedded') {
-        <div class="h-full bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit">
-          <ai-chat-window class="flex-1" />
+        <div 
+          class="h-full min-h-0 bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
+        >
+          <ai-chat-window class="flex-1 min-h-0" />
         </div>
       } @else {
         <!-- Popover Mode -->
@@ -39,7 +41,9 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
           @if (store.isOpen()) {
             <div 
               @popoverScale
-              class="w-[600px] h-[600px] max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
+              [style.width]="store.width()"
+              [style.height]="store.height()"
+              class="max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
             >
               <!-- Popover Header -->
               <div class="p-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">

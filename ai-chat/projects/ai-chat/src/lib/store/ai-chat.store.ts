@@ -10,16 +10,24 @@ import {
 import { ChatMessage } from '../models';
 import { CohereService } from '../services/cohere.service';
 
-export interface AiChatConfig {
+export interface ModelConfig {
     systemPrompt: string;
     apiKey?: string;
     modelName?: string;
     apiUrl?: string;
     tools?: any[];
     documents?: any[];
+}
+
+export interface DesignConfig {
     mode?: 'embedded' | 'popover';
-    userPhoto?: string;
+    width?: string;
+    height?: string;
     isDarkMode?: boolean;
+}
+
+export interface ChatUIConfig {
+    userPhoto?: string;
     inputPlaceholder?: string;
     emptyChatTitle?: string;
     emptyChatSubtitle?: string;
@@ -28,8 +36,14 @@ export interface AiChatConfig {
     title?: string;
 }
 
-export interface AiChatState extends Required<AiChatConfig> {
-    // Chat
+export interface AiChatConfig {
+    model: ModelConfig;
+    design?: DesignConfig;
+    chat?: ChatUIConfig;
+}
+
+export interface AiChatState extends Required<ModelConfig>, Required<DesignConfig>, Required<ChatUIConfig> {
+    // Chat State
     messages: ChatMessage[];
     isProcessing: boolean;
     isOpen: boolean;
@@ -40,15 +54,22 @@ export interface AiChatState extends Required<AiChatConfig> {
 }
 
 const initialState: AiChatState = {
+    // Model Defaults
     apiKey: '',
     modelName: 'command-r-08-2024',
-    systemPrompt: '', // Required by user, so we expect it to be provided
+    systemPrompt: '',
     apiUrl: 'https://api.cohere.com/v2/chat',
     tools: [],
     documents: [],
+
+    // Design Defaults
     mode: 'embedded',
-    userPhoto: 'https://ui-avatars.com/api/?name=User',
+    width: '600px',
+    height: '600px',
     isDarkMode: false,
+
+    // Chat UI Defaults
+    userPhoto: 'https://ui-avatars.com/api/?name=User',
     inputPlaceholder: 'במה ניתן לעזור?',
     emptyChatTitle: 'התחל שיחה',
     emptyChatSubtitle: 'שאל אותי משהו...',
@@ -56,6 +77,7 @@ const initialState: AiChatState = {
     startMessage: 'היי! איך אפשר לעזור לך היום?',
     title: 'AI Chat',
 
+    // Internal State
     messages: [],
     isProcessing: false,
     isOpen: false,
@@ -94,9 +116,14 @@ export const AiChatStore = signalStore(
         };
 
         return {
-            updateConfig(config: Partial<AiChatState>) {
-                patchState(store, config);
-                if (config.isDarkMode !== undefined) updateTheme(config.isDarkMode);
+            updateConfig(config: AiChatConfig) {
+                const flatConfig: Partial<AiChatState> = {
+                    ...config.model,
+                    ...config.design,
+                    ...config.chat
+                };
+                patchState(store, flatConfig as any);
+                if (config.design?.isDarkMode !== undefined) updateTheme(config.design.isDarkMode);
             },
 
             toggleTheme() {

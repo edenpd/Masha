@@ -18,15 +18,23 @@ import { environment } from '../environments/environment';
 })
 export class AppComponent {
   protected chatConfig = {
-    systemPrompt: 'אתה עוזר משאבי אנוש מקצועי',
-    apiKey: environment.cohereApiKey,
-    title: 'AI Chat Library',
-    mode: 'embedded' as const,
-    isDarkMode: true,
-    questionSuggestions: [
-      'איך עושים תיאום מס?',
-      'מהן ההפרשות לפנסיה?',
-      'איך מעדכנים פרטי בנק?'
-    ]
+    model: {
+      systemPrompt: 'אתה עוזר משאבי אנוש מקצועי',
+      apiKey: environment.cohereApiKey,
+    },
+    design: {
+      mode: 'popover' as const,
+      isDarkMode: false,
+      width: '450px',
+      height: '600px'
+    },
+    chat: {
+      title: 'AI Chat Library',
+      questionSuggestions: [
+        'איך עושים תיאום מס?',
+        'מהן ההפרשות לפנסיה?',
+        'איך מעדכנים פרטי בנק?'
+      ]
+    }
   };
 }
