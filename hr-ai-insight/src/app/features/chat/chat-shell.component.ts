@@ -4,15 +4,17 @@ import { AppStore } from '../../store/app.store';
 import { ChatWindowComponent } from './components/chat-window/chat-window.component';
 import { EmployeeSidebarComponent } from './components/employee-sidebar/employee-sidebar.component';
 import { HeaderComponent } from './components/header/header.component';
+import { AiChatComponent, AiChatConfig } from 'ngx-gen-ai-chat';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-chat-shell',
   standalone: true,
   imports: [
-    ChatWindowComponent,
     EmployeeSidebarComponent,
-    HeaderComponent
-],
+    HeaderComponent,
+    AiChatComponent
+  ],
   template: `
     <div class="h-screen bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300">
       <!-- Header -->
@@ -22,7 +24,7 @@ import { HeaderComponent } from './components/header/header.component';
       <div class="flex-1 flex overflow-hidden">
         <!-- Chat Area -->
         <main class="flex-1 flex flex-col overflow-hidden">
-          <app-chat-window />
+          <ai-chat [config]="chatConfig" style="width: 100%; height: 100%;" />
         </main>
         
         <!-- Sidebar -->
@@ -46,4 +48,26 @@ export class ChatShellComponent {
 
   // Configuration to toggle sidebar visibility
   protected readonly showSidebar = false;
+
+  protected readonly chatConfig: AiChatConfig = {
+    model: {
+      systemPrompt: 'You are a helpful assistant specialized in answering questions about HR policies.',
+      apiKey: environment.cohereApiKey,
+    },
+    design: {
+      mode: 'embedded',
+      width: '450px',
+      height: '650px',
+      isDarkMode: true
+    },
+    chat: {
+      title: 'HR Assistant',
+      startMessage: 'היי! איך אפשר לעזור לך היום?',
+      questionSuggestions: [
+        'How many vacation days do I have?',
+        'What is the dress code?',
+        'How do I report an absence?'
+      ]
+    }
+  };
 }
