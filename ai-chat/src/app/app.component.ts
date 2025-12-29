@@ -23,7 +23,7 @@ export class AppComponent {
       apiKey: environment.cohereApiKey,
     },
     design: {
-      mode: 'popover' as const,
+      mode: 'embedded' as const,
       isDarkMode: false,
       width: '450px',
       height: '600px'

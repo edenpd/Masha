@@ -98,10 +98,6 @@ export const AiChatStore = signalStore(
         const cohereService = inject(CohereService);
         let msgSubscription: Subscription | null = null;
 
-        const updateTheme = (isDark: boolean) => {
-            const root = document.documentElement.classList;
-            isDark ? root.add('dark') : root.remove('dark');
-        };
 
         const updateAssistantMsg = (id: string, update: Partial<ChatMessage>) => {
             patchState(store, (state) => ({
@@ -123,13 +119,11 @@ export const AiChatStore = signalStore(
                     ...config.chat
                 };
                 patchState(store, flatConfig as any);
-                if (config.design?.isDarkMode !== undefined) updateTheme(config.design.isDarkMode);
             },
 
             toggleTheme() {
                 const isDark = !store.isDarkMode();
                 patchState(store, { isDarkMode: isDark });
-                updateTheme(isDark);
             },
 
             toggleChat: () => patchState(store, { isOpen: !store.isOpen() }),
@@ -197,7 +191,6 @@ export const AiChatStore = signalStore(
             },
 
             initialize() {
-                if (store.isDarkMode()) updateTheme(true);
                 if (store.startMessage() && store.messages().length === 0) {
                     const startMsg = { type: 'assistant', content: store.startMessage(), id: crypto.randomUUID(), timestamp: new Date() } as ChatMessage;
                     patchState(store, { messages: [startMsg] });
