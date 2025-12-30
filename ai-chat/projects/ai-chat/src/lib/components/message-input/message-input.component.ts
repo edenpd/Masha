@@ -1,4 +1,4 @@
-import { Component, inject, signal, ElementRef, ViewChild, effect, ViewEncapsulation } from '@angular/core';
+import { Component, inject, signal, ElementRef, ViewChild, effect, ViewEncapsulation, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiChatStore } from '../../store/ai-chat.store';
@@ -15,7 +15,7 @@ import { AiChatStore } from '../../store/ai-chat.store';
             class="absolute -inset-1 bg-gradient-to-r from-neural-500/20 via-synapse-500/20 to-matrix-500/20 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"
           ></div>
           
-          <div class="relative flex items-end gap-3 bg-white dark:bg-deep-700/50 rounded-2xl border border-black/10 dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
+           <div class="relative flex items-end gap-3 bg-white ai-dark:bg-deep-700/50 rounded-2xl border border-black/10 ai-dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
             
             <div class="flex-1 relative">
               <textarea
@@ -26,19 +26,19 @@ import { AiChatStore } from '../../store/ai-chat.store';
                 [readonly]="store.isProcessing()"
                 (keydown)="onKeyDown($event)"
                 rows="1"
-                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
+                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 ai-dark:text-white placeholder-gray-400 ai-dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
                 [class.opacity-50]="store.isProcessing()"
                 [class.cursor-not-allowed]="store.isProcessing()"
               ></textarea>
             </div>
 
             <div class="flex items-center gap-2 pb-2 pl-2">
-              <div class="relative">
+              <div class="relative" #suggestionsWrapper>
               @if (store.questionSuggestions().length > 0) {
                 <button 
                   type="button"
                   (click)="showSuggestions.set(!showSuggestions())"
-                  class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-neural-600 dark:hover:text-white"
+                  class="p-2 rounded-lg hover:bg-black/5 ai-dark:hover:bg-white/10 transition-colors text-gray-400 ai-dark:text-gray-500 hover:text-neural-600 ai-dark:hover:text-white"
                   title="שאלות לדוגמה"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,9 +49,9 @@ import { AiChatStore } from '../../store/ai-chat.store';
               }
                 @if (showSuggestions()) {
                   <div 
-                    class="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden z-10"
+                    class="absolute bottom-full left-0 mb-2 w-72 bg-white ai-dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 ai-dark:border-white/10 shadow-2xl overflow-hidden z-10"
                   >
-                    <div class="p-3 border-b border-black/5 dark:border-white/10 bg-slate-50 dark:bg-transparent">
+                    <div class="p-3 border-b border-black/5 ai-dark:border-white/10 bg-slate-50 ai-dark:bg-transparent">
                       <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">שאלות לדוגמה</p>
                     </div>
                     <div class="p-2 space-y-1">
@@ -59,7 +59,7 @@ import { AiChatStore } from '../../store/ai-chat.store';
                         <button
                           type="button"
                           (click)="useSuggestion(suggestion)"
-                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 dark:hover:bg-white/10 transition-colors text-gray-600 dark:text-gray-300 hover:text-neural-600 dark:hover:text-white"
+                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 ai-dark:hover:bg-white/10 transition-colors text-gray-600 ai-dark:text-gray-300 hover:text-neural-600 ai-dark:hover:text-white"
                         >
                           {{ suggestion }}
                         </button>
@@ -102,15 +102,15 @@ import { AiChatStore } from '../../store/ai-chat.store';
 
         <div class="flex justify-between items-center mt-2 px-2">
           <p class="text-xs text-gray-400">
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400">Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400">Enter</kbd>
             לשליחה 
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
             לשורה חדשה
           </p>
           
           @if (store.isProcessing()) {
-            <p class="text-xs text-synapse-500 dark:text-synapse-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 dark:bg-synapse-400 animate-pulse"></span>
+            <p class="text-xs text-synapse-500 ai-dark:text-synapse-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 ai-dark:bg-synapse-400 animate-pulse"></span>
               מעבד בקשה...
             </p>
           }
@@ -128,9 +128,17 @@ import { AiChatStore } from '../../store/ai-chat.store';
 export class MessageInputComponent {
   protected readonly store = inject(AiChatStore);
   @ViewChild('inputField') private inputField!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('suggestionsWrapper') private suggestionsWrapper!: ElementRef<HTMLDivElement>;
 
   protected inputValue = signal('');
   protected showSuggestions = signal(false);
+
+  @HostListener('document:click', ['$event'])
+  protected onClickOutside(event: Event): void {
+    if (this.showSuggestions() && this.suggestionsWrapper && !this.suggestionsWrapper.nativeElement.contains(event.target as Node)) {
+      this.showSuggestions.set(false);
+    }
+  }
 
   constructor() {
     effect(() => {

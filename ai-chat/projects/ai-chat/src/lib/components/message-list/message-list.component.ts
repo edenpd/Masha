@@ -20,17 +20,17 @@ import { AiChatStore } from '../../store/ai-chat.store';
                     <img 
                       [src]="store.userPhoto()" 
                       alt="User"
-                      class="w-10 h-10 rounded-full ring-2 ring-black/10 dark:ring-white/20 shadow-md"
+                      class="w-10 h-10 rounded-full ring-2 ring-black/10 ai-dark:ring-white/20 shadow-md"
                     />
                 </div>
-                <div class="max-w-[80%] bg-white dark:bg-gradient-to-br dark:from-neural-600 dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 dark:border-transparent">
-                  <p class="text-gray-800 dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
-                  <p class="text-xs text-gray-500 dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
+                <div class="max-w-[80%] bg-white ai-dark:bg-gradient-to-br ai-dark:from-neural-600 ai-dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 ai-dark:border-transparent">
+                  <p class="text-gray-800 ai-dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
+                  <p class="text-xs text-gray-500 ai-dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
                 </div>
               </div>
             } @else if (message.isTyping && !message.content) {
               <div class="flex gap-3 w-full justify-end">
-                <div class="inline-block bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="inline-block bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div class="flex gap-1.5">
                     <div class="w-2.5 h-2.5 rounded-full bg-synapse-400 animate-bounce" style="animation-delay: 0ms"></div>
                     <div class="w-2.5 h-2.5 rounded-full bg-neural-400 animate-bounce" style="animation-delay: 150ms"></div>
@@ -45,9 +45,9 @@ import { AiChatStore } from '../../store/ai-chat.store';
               </div>
             } @else {
               <div class="flex gap-3 w-full justify-end">
-                <div class="max-w-[85%] bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="max-w-[85%] bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div 
-                    class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
+                    class="text-gray-800 ai-dark:text-gray-100 whitespace-pre-wrap prose prose-sm ai-dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
                   ></div>
                   <p class="text-xs text-gray-500 mt-3">{{ formatTime(message.timestamp) }}</p>
@@ -62,7 +62,7 @@ import { AiChatStore } from '../../store/ai-chat.store';
           </div>
         } @empty {
           <div class="flex flex-col items-center justify-center h-full py-20 text-center">
-            <div class="w-20 h-20 rounded-2xl bg-black/5 dark:bg-neural-500/20 flex items-center justify-center mb-6">
+            <div class="w-20 h-20 rounded-2xl bg-black/5 ai-dark:bg-neural-500/20 flex items-center justify-center mb-6">
               <span class="text-4xl">💬</span>
             </div>
             <h3 class="text-xl font-semibold mb-2 gradient-text">{{ store.emptyChatTitle() }}</h3>

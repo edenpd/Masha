@@ -9,7 +9,7 @@ import { AiChatStore } from '../../store/ai-chat.store';
   template: `
     <button
       (click)="store.toggleChat()"
-      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 dark:ring-black/20 overflow-hidden"
+      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 ai-dark:ring-black/20 overflow-hidden"
       [attr.aria-label]="store.isOpen() ? 'סגור צאט' : 'פתח צאט'"
     >
       <div class="absolute inset-0 rounded-full bg-synapse-400 opacity-20 group-hover:animate-ping"></div>

@@ -110,5 +110,9 @@ module.exports = {
             },
         },
     },
-    plugins: [],
+    plugins: [
+        function ({ addVariant }) {
+            addVariant('ai-dark', '.ai-chat-dark &');
+        }
+    ],
 }

@@ -58,7 +58,7 @@ export class ChatShellComponent {
       mode: 'embedded',
       width: '450px',
       height: '650px',
-      isDarkMode: false
+      isDarkMode: true
     },
     chat: {
       title: 'HR Assistant',

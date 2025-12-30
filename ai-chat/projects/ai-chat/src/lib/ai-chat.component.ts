@@ -28,10 +28,10 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
     ])
   ],
   template: `
-    <div [class.dark]="store.isDarkMode()" class="h-full flex flex-col">
+    <div [class.ai-chat-dark]="store.isDarkMode()" class="h-full flex flex-col">
       @if (store.mode() === 'embedded') {
         <div 
-          class="h-full min-h-0 bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
+          class="h-full min-h-0 bg-slate-50 ai-dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
         >
           <ai-chat-window class="flex-1 min-h-0" />
         </div>
@@ -43,17 +43,17 @@ import { ChatButtonComponent } from './components/chat-button/chat-button.compon
               @popoverScale
               [style.width]="store.width()"
               [style.height]="store.height()"
-              class="max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
+              class="max-h-[calc(100vh-120px)] bg-white ai-dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 ai-dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
             >
               <!-- Popover Header -->
-              <div class="p-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
+              <div class="p-4 border-b border-black/5 ai-dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center">
                     <span class="text-sm">🤖</span>
                   </div>
-                  <span class="font-semibold text-gray-800 dark:text-white">{{ store.title() }}</span>
+                  <span class="font-semibold text-gray-800 ai-dark:text-white">{{ store.title() }}</span>
                 </div>
-                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
+                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 ai-dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>

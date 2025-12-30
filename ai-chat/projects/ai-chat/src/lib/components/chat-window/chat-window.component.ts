@@ -14,7 +14,7 @@ import { MessageInputComponent } from '../message-input/message-input.component'
         <ai-message-list />
       </div>
       
-      <div class="border-t border-black/5 dark:border-white/5 p-4 bg-slate-200/50 dark:bg-deep-800/50 transition-colors duration-300">
+      <div class="border-t border-black/5 ai-dark:border-white/5 p-4 bg-slate-200/50 ai-dark:bg-deep-800/50 transition-colors duration-300">
         <ai-message-input />
       </div>
     </div>

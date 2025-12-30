@@ -1,0 +1,13 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+/* Base styles that would normally come from @tailwind base */
+* {
+    box-sizing: border-box;
+}
+
+/* Utility classes we specifically need if Tailwind isn't processing this file */
+/* But it SHOULD be processing it. Let's try without @tailwind first to see if it's the cause of the crash */
