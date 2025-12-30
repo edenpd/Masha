@@ -1,18 +1,26 @@
-import { Injectable } from '@angular/core';
-import { EmployeeData, SalaryRecord, TimeOffRequest } from '../../models';
+import { Injectable, signal, computed } from '@angular/core';
+import { AuthUser, AuthorizedEmployee, EmployeeData, SalaryRecord } from '../../models';
 
 /**
- * Mock Employee Data Service
- * Provides detailed employee information including time off and salary
+ * Data Service
+ * Unified service for Authentication and Employee Data
  */
 @Injectable({
     providedIn: 'root'
 })
-export class EmployeeDataService {
+export class DataService {
+    // Auth State signals
+    private readonly _currentUser = signal<AuthUser | null>(null);
+    private readonly _isLoading = signal(false);
+    private readonly _error = signal<string | null>(null);
 
-    /**
-     * Detailed mock data for each employee
-     */
+    // Public computed signals for Auth
+    readonly currentUser = computed(() => this._currentUser());
+    readonly isLoading = computed(() => this._isLoading());
+    readonly isAuthenticated = computed(() => this._currentUser() !== null);
+    readonly error = computed(() => this._error());
+
+    // Employee Data Store
     private readonly employeeDataMap: Record<string, EmployeeData> = {
         'emp-0': {
             id: 'emp-0',
@@ -195,11 +203,79 @@ export class EmployeeDataService {
     };
 
     /**
+     * Get Current User Details
+     */
+    async getCurrentUser(): Promise<AuthUser> {
+        this._isLoading.set(true);
+        this._error.set(null);
+
+        try {
+            await this.delay(300);
+
+            const mockUser: AuthUser = {
+                firstName: 'משה',
+                lastName: 'לוי',
+                nickname: 'מושיקו',
+                gender: 1,
+                number: '12345',
+                imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=hr-manager&backgroundColor=0c8ce9',
+                departmentName: 'הנהלת משאבי אנוש',
+                isDarkMode: true,
+            };
+
+            this._currentUser.set(mockUser);
+            return mockUser;
+        } catch (error) {
+            this._error.set('שגיאה בזיהוי המשתמש.');
+            throw error;
+        } finally {
+            this._isLoading.set(false);
+        }
+    }
+
+    /**
+     * Get Authorized Employees
+     */
+    async getAuthorizedEmployees(): Promise<AuthorizedEmployee[]> {
+        this._isLoading.set(true);
+
+        try {
+            await this.delay(1500);
+
+            // Derive authorized employees list directly from the detailed data map
+            const employees: AuthorizedEmployee[] = Object.values(this.employeeDataMap).map(data => ({
+                id: data.id,
+                name: data.personalInfo.name,
+                nickname: data.personalInfo.nickname,
+                gender: data.personalInfo.gender,
+                number: data.personalInfo.number,
+                imageUrl: data.personalInfo.imageUrl,
+                hativaName: data.personalInfo.hativaName,
+                departmentName: data.personalInfo.departmentName,
+                branchName: data.personalInfo.branchName,
+                roleName: data.personalInfo.roleName
+            }));
+
+            const current = this._currentUser();
+            if (current) {
+                this._currentUser.set({ ...current, authEmployees: employees });
+            }
+
+            return employees;
+        } catch (error) {
+            this._error.set('שגיאה בטעינת רשימת העובדים.');
+            throw error;
+        } finally {
+            this._isLoading.set(false);
+        }
+    }
+
+    /**
      * Get full employee data by ID
      */
-    async getEmployeeData(employee: any): Promise<EmployeeData | null> {
+    async getEmployeeData(employeeId: any): Promise<EmployeeData | null> {
         // Simulate API delay
-        return this.employeeDataMap[employee.employee_id] || null;
+        return this.employeeDataMap[employeeId.employee_id] || null;
     }
 
     /**
@@ -208,12 +284,11 @@ export class EmployeeDataService {
     async getAllEmployeesData(): Promise<EmployeeData[]> {
         // Simulate API delay
         await this.delay(1000);
-
         return Object.values(this.employeeDataMap);
     }
 
     /**
-     * Generate mock salary history for the past 12 months
+     * Helper: Generate mock salary history
      */
     private generateSalaryHistory(startGross: number, currentGross: number): SalaryRecord[] {
         const history: SalaryRecord[] = [];

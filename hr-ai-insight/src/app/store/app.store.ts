@@ -11,14 +11,11 @@ import {
     AppState,
     AuthUser,
     AuthorizedEmployee,
-    EmployeeData,
     ChatMessage,
     LoadingStep
 } from '../models';
 import {
-    AuthService,
-    CohereService,
-    EmployeeDataService
+    DataService
 } from '../core/services';
 import { AiChatStore } from 'ngx-gen-ai-chat';
 
@@ -142,51 +139,49 @@ export const AppStore = signalStore(
 
     withMethods((store) => {
         // Inject services
-        const authService = inject(AuthService);
-        const cohereService = inject(CohereService);
-        const employeeDataService = inject(EmployeeDataService);
+        const dataService = inject(DataService);
         const aiChatStore = inject(AiChatStore);
 
         // Helper to update loading step
-        const updateLoadingStep = (stepIndex: number, completed: boolean = true) => {
-            const steps = [...store.loadingSteps()];
-            if (steps[stepIndex]) {
-                steps[stepIndex] = { ...steps[stepIndex], completed };
-            }
-            patchState(store, {
-                loadingSteps: steps,
-                currentLoadingStep: stepIndex
-            });
-        };
+        // const updateLoadingStep = (stepIndex: number, completed: boolean = true) => {
+        //     const steps = [...store.loadingSteps()];
+        //     if (steps[stepIndex]) {
+        //         steps[stepIndex] = { ...steps[stepIndex], completed };
+        //     }
+        //     patchState(store, {
+        //         loadingSteps: steps,
+        //         currentLoadingStep: stepIndex
+        //     });
+        // };
 
-        // Helper to add message
-        const addMessage = (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
-            const newMessage: ChatMessage = {
-                ...message,
-                id: crypto.randomUUID(),
-                timestamp: new Date(),
-            };
-            patchState(store, {
-                messages: [...store.messages(), newMessage]
-            });
-            return newMessage.id;
-        };
+        // // Helper to add message
+        // const addMessage = (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+        //     const newMessage: ChatMessage = {
+        //         ...message,
+        //         id: crypto.randomUUID(),
+        //         timestamp: new Date(),
+        //     };
+        //     patchState(store, {
+        //         messages: [...store.messages(), newMessage]
+        //     });
+        //     return newMessage.id;
+        // };
 
-        // Helper to update message
-        const updateMessage = (id: string, updates: Partial<ChatMessage>) => {
-            const messages = store.messages().map(m =>
-                m.id === id ? { ...m, ...updates } : m
-            );
-            patchState(store, { messages });
-        };
+        // // Helper to update message
+        // const updateMessage = (id: string, updates: Partial<ChatMessage>) => {
+        //     const messages = store.messages().map(m =>
+        //         m.id === id ? { ...m, ...updates } : m
+        //     );
+        //     patchState(store, { messages });
+        // };
 
-        // Helper to remove typing indicator
-        const removeTypingIndicator = () => {
-            const messages = store.messages().filter(m => !m.isTyping);
-            patchState(store, { messages });
-        };
+        // // Helper to remove typing indicator
+        // const removeTypingIndicator = () => {
+        //     const messages = store.messages().filter(m => !m.isTyping);
+        //     patchState(store, { messages });
+        // };
 
-        let msgSubscription: Subscription | null = null;
+        // let msgSubscription: Subscription | null = null;
 
         return {
             /**
@@ -201,7 +196,7 @@ export const AppStore = signalStore(
                     patchState(store, { appState: 'loading-data' });
 
                     // Step 1: Get User Details (Fast)
-                    const userData = await authService.getCurrentUser();
+                    const userData = await dataService.getCurrentUser();
                     const theme = userData.isDarkMode ? 'dark' : 'light';
 
                     patchState(store, {
@@ -215,7 +210,7 @@ export const AppStore = signalStore(
                     document.documentElement.classList.toggle('dark', theme === 'dark');
 
                     // Step 2: Get Authorized Employees (Slower)
-                    const employees = await authService.getAuthorizedEmployees();
+                    const employees = await dataService.getAuthorizedEmployees();
 
                     patchState(store, {
                         authorizedEmployees: employees,
@@ -290,8 +285,8 @@ ${employeeList}
                             },
                             required: ["employee_id"]
                         },
-                        handler: async (employee_id: string) => {
-                            return await employeeDataService.getEmployeeData(employee_id);
+                        handler: async (employee: any) => {
+                            return await dataService.getEmployeeData(employee);
                         }
                     }
                 ];

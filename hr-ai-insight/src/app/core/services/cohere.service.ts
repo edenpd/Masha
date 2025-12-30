@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { AuthUser, AuthorizedEmployee, EmployeeData } from '../../models';
-import { EmployeeDataService } from './employee-data.service';
+import { DataService } from './data.service';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -15,7 +15,7 @@ import { environment } from '../../../environments/environment';
 })
 export class CohereService {
     private readonly http = inject(HttpClient);
-    private readonly employeeDataService = inject(EmployeeDataService);
+    private readonly employeeDataService = inject(DataService);
     private readonly apiUrl = 'https://api.cohere.com/v1/chat';
 
     // API key is now loaded from environment file
