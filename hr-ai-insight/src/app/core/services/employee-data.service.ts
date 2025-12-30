@@ -197,11 +197,9 @@ export class EmployeeDataService {
     /**
      * Get full employee data by ID
      */
-    async getEmployeeData(employeeId: string): Promise<EmployeeData | null> {
+    async getEmployeeData(employee: any): Promise<EmployeeData | null> {
         // Simulate API delay
-        await this.delay(500);
-        debugger;
-        return this.employeeDataMap[employeeId] || null;
+        return this.employeeDataMap[employee.employee_id] || null;
     }
 
     /**

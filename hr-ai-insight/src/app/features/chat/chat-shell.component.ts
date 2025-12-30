@@ -53,6 +53,7 @@ export class ChatShellComponent {
     model: {
       systemPrompt: this.store.getSystemPrompt(),
       apiKey: environment.cohereApiKey,
+      tools: this.store.getTools(),
     },
     design: {
       mode: 'embedded',

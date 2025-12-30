@@ -278,12 +278,15 @@ ${employeeList}
                     {
                         name: "get_employee_detailed_data",
                         description: "מתקשר למערכת ה-HR כדי לקבל נתונים מפורטים (שכר, חופשות, ביצועים) עבור עובד ספציפי לפי מזהה.",
-                        parameter_definitions: {
-                            employee_id: {
-                                description: "המזהה הייחודי (ID) של העובד",
-                                type: "str",
-                                required: true
-                            }
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                employee_id: {
+                                    description: "המזהה הייחודי (ID) של העובד",
+                                    type: "string",
+                                }
+                            },
+                            required: ["employee_id"]
                         },
                         handler: async (employee_id: string) => {
                             return await employeeDataService.getEmployeeData(employee_id);
