@@ -33,6 +33,9 @@
             ],
             "@store/*": [
                 "src/app/store/*"
+            ],
+            "ngx-gen-ai-chat": [
+                "../ai-chat/projects/ai-chat/src/public-api.ts"
             ]
         }
     },
