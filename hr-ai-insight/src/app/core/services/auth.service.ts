@@ -40,7 +40,7 @@ export class AuthService {
                 number: 'EMP-001',
                 imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=hr-manager&backgroundColor=0c8ce9',
                 departmentName: 'הנהלת משאבי אנוש',
-                isDarkMode: false, // Default to light mode (user can toggle)
+                isDarkMode: true, // Default to light mode (user can toggle)
             };
 
             this._currentUser.set(mockUser);
