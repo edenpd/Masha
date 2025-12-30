@@ -301,106 +301,106 @@ ${employeeList}
              * Process a user message and generate AI response
              */
             async processMessage(userInput: string) {
-                if (!userInput.trim() || store.isProcessing()) return;
+                // if (!userInput.trim() || store.isProcessing()) return;
 
-                patchState(store, { isProcessing: true });
+                // patchState(store, { isProcessing: true });
 
-                // Add user message
-                addMessage({
-                    type: 'user',
-                    content: userInput,
-                });
+                // // Add user message
+                // addMessage({
+                //     type: 'user',
+                //     content: userInput,
+                // });
 
-                // Add typing indicator
-                const typingId = addMessage({
-                    type: 'assistant',
-                    content: '',
-                    isTyping: true,
-                });
+                // // Add typing indicator
+                // const typingId = addMessage({
+                //     type: 'assistant',
+                //     content: '',
+                //     isTyping: true,
+                // });
 
-                try {
-                    const employees = store.authorizedEmployees();
-                    const user = store.currentUser();
+                // try {
+                //     const employees = store.authorizedEmployees();
+                //     const user = store.currentUser();
 
-                    if (!user) throw new Error('No user found');
+                //     if (!user) throw new Error('No user found');
 
-                    // Prepare chat history (exclude current message and typing indicators)
-                    const rawMessages = store.messages().filter(m => !m.isTyping);
-                    // The last message is the current user input we just added, so exclude it from history
-                    const historyMessages = rawMessages.slice(0, -1);
+                //     // Prepare chat history (exclude current message and typing indicators)
+                //     const rawMessages = store.messages().filter(m => !m.isTyping);
+                //     // The last message is the current user input we just added, so exclude it from history
+                //     const historyMessages = rawMessages.slice(0, -1);
 
-                    const chatHistory = historyMessages.map(m => ({
-                        role: m.type === 'user' ? 'USER' : 'CHATBOT',
-                        message: m.content
-                    }));
+                //     const chatHistory = historyMessages.map(m => ({
+                //         role: m.type === 'user' ? 'USER' : 'CHATBOT',
+                //         message: m.content
+                //     }));
 
-                    // Step A: Generate AI response as a stream
-                    msgSubscription = cohereService.generateResponse(userInput, employees, user, chatHistory).subscribe({
-                        next: (chunk) => {
-                            // If this is the first chunk, remove typing indicator
-                            if (store.hasTypingIndicator()) {
-                                removeTypingIndicator();
-                                addMessage({
-                                    type: 'assistant',
-                                    content: chunk,
-                                });
-                            } else {
-                                // Append to the last assistant message
-                                const messages = store.messages();
-                                const lastAssistantMsg = [...messages].reverse().find(m => m.type === 'assistant');
-                                if (lastAssistantMsg) {
-                                    updateMessage(lastAssistantMsg.id, {
-                                        content: lastAssistantMsg.content + chunk
-                                    });
-                                }
-                            }
-                        },
-                        error: (err) => {
-                            console.error('Streaming error:', err);
-                            removeTypingIndicator();
-                            addMessage({
-                                type: 'assistant',
-                                content: '❌ אירעה שגיאה בקבלת המידע.',
-                            });
-                            patchState(store, { isProcessing: false });
-                        },
-                        complete: () => {
-                            patchState(store, { isProcessing: false });
-                        }
-                    });
+                //     // Step A: Generate AI response as a stream
+                //     msgSubscription = cohereService.generateResponse(userInput, employees, user, chatHistory).subscribe({
+                //         next: (chunk) => {
+                //             // If this is the first chunk, remove typing indicator
+                //             if (store.hasTypingIndicator()) {
+                //                 removeTypingIndicator();
+                //                 addMessage({
+                //                     type: 'assistant',
+                //                     content: chunk,
+                //                 });
+                //             } else {
+                //                 // Append to the last assistant message
+                //                 const messages = store.messages();
+                //                 const lastAssistantMsg = [...messages].reverse().find(m => m.type === 'assistant');
+                //                 if (lastAssistantMsg) {
+                //                     updateMessage(lastAssistantMsg.id, {
+                //                         content: lastAssistantMsg.content + chunk
+                //                     });
+                //                 }
+                //             }
+                //         },
+                //         error: (err) => {
+                //             console.error('Streaming error:', err);
+                //             removeTypingIndicator();
+                //             addMessage({
+                //                 type: 'assistant',
+                //                 content: '❌ אירעה שגיאה בקבלת המידע.',
+                //             });
+                //             patchState(store, { isProcessing: false });
+                //         },
+                //         complete: () => {
+                //             patchState(store, { isProcessing: false });
+                //         }
+                //     });
 
-                } catch (error) {
-                    console.error('Processing error:', error);
-                    removeTypingIndicator();
-                    addMessage({
-                        type: 'assistant',
-                        content: '❌ אירעה שגיאה בעיבוד הבקשה. נסה שוב.',
-                    });
-                    patchState(store, { isProcessing: false });
-                }
+                // } catch (error) {
+                //     console.error('Processing error:', error);
+                //     removeTypingIndicator();
+                //     addMessage({
+                //         type: 'assistant',
+                //         content: '❌ אירעה שגיאה בעיבוד הבקשה. נסה שוב.',
+                //     });
+                //     patchState(store, { isProcessing: false });
+                // }
             },
 
             /**
              * Stop current AI generation
              */
             stopRequest() {
-                if (msgSubscription) {
-                    msgSubscription.unsubscribe();
-                    msgSubscription = null;
-                }
-                cohereService.stopStream();
-                removeTypingIndicator();
+                // if (msgSubscription) {
+                //     msgSubscription.unsubscribe();
+                //     msgSubscription = null;
+                // }
+                // cohereService.stopStream();
+                // removeTypingIndicator();
 
-                // Add a visual indicator that it was stopped if there's an unfinished message
-                const messages = store.messages();
-                const lastMsg = messages[messages.length - 1];
-                if (lastMsg && lastMsg.type === 'assistant' && !lastMsg.isTyping) {
-                    updateMessage(lastMsg.id, {
-                        content: lastMsg.content + ' [הופסק על ידי המשתמש]'
-                    });
-                }
+                // // Add a visual indicator that it was stopped if there's an unfinished message
+                // const messages = store.messages();
+                // const lastMsg = messages[messages.length - 1];
+                // if (lastMsg && lastMsg.type === 'assistant' && !lastMsg.isTyping) {
+                //     updateMessage(lastMsg.id, {
+                //         content: lastMsg.content + ' [הופסק על ידי המשתמש]'
+                //     });
+                // }
 
-                patchState(store, { isProcessing: false });
+                // patchState(store, { isProcessing: false });
             },
 
             /**
@@ -434,11 +434,7 @@ ${employeeList}
                 patchState(store, { theme: newTheme });
 
                 // Update DOM for Tailwind class strategy
-                if (newTheme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                document.documentElement.classList.toggle('dark', newTheme === 'dark');
             },
         };
     })
