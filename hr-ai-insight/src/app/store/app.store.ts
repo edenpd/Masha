@@ -20,6 +20,7 @@ import {
     CohereService,
     EmployeeDataService
 } from '../core/services';
+import { AiChatStore } from 'ngx-gen-ai-chat';
 
 /**
  * Application State Interface
@@ -144,6 +145,7 @@ export const AppStore = signalStore(
         const authService = inject(AuthService);
         const cohereService = inject(CohereService);
         const employeeDataService = inject(EmployeeDataService);
+        const aiChatStore = inject(AiChatStore);
 
         // Helper to update loading step
         const updateLoadingStep = (stepIndex: number, completed: boolean = true) => {
@@ -404,20 +406,17 @@ ${employeeList}
             /**
              * Clear chat history
              */
-            clearChat() {
-                patchState(store, { messages: [] });
-
-                // Re-add welcome message
+            clearChat(customMessage?: string) {
                 const user = store.currentUser();
                 const employees = store.authorizedEmployees();
 
-                if (user) {
-                    const helpPrefix = user.gender === 1 ? 'כיצד אוכל לעזור לך' : 'כיצד אוכל לעזור לך'; // In Hebrew both are same spelled but spoken differently
-                    addMessage({
-                        type: 'assistant',
-                        content: `השיחה נוקתה. ${helpPrefix}, ${user.nickname}?\n\nיש לי גישה לנתונים של ${employees.length} עובדים מורשים.`,
-                    });
+                let message: string | undefined = customMessage;
+
+                if (!message && user) {
+                    message = `השיחה נוקתה. כיצד אוכל לעזור לך?\n\nיש לי גישה לנתונים של ${employees.length} עובדים מורשים.`;
                 }
+
+                aiChatStore.clearChat(message);
             },
 
             /**

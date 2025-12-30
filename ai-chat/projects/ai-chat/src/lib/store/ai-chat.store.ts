@@ -129,7 +129,23 @@ export const AiChatStore = signalStore(
             toggleChat: () => patchState(store, { isOpen: !store.isOpen() }),
             setIsOpen: (isOpen: boolean) => patchState(store, { isOpen }),
 
-            clearChat: () => patchState(store, { messages: [] }),
+            clearChat(initialMessage?: string) {
+                this.stopRequest();
+
+                const messages: ChatMessage[] = [];
+                const finalInitialMessage = initialMessage || store.startMessage();
+
+                if (finalInitialMessage) {
+                    messages.push({
+                        type: 'assistant',
+                        content: finalInitialMessage,
+                        id: crypto.randomUUID(),
+                        timestamp: new Date()
+                    });
+                }
+
+                patchState(store, { messages });
+            },
 
             stopRequest() {
                 if (msgSubscription) {
