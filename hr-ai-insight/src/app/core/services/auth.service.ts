@@ -37,10 +37,10 @@ export class AuthService {
                 lastName: 'לוי',
                 nickname: 'מושיקו',
                 gender: 1,
-                number: 'EMP-001',
+                number: '12345',
                 imageUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=hr-manager&backgroundColor=0c8ce9',
                 departmentName: 'הנהלת משאבי אנוש',
-                isDarkMode: true, // Default to light mode (user can toggle)
+                isDarkMode: true,
             };
 
             this._currentUser.set(mockUser);

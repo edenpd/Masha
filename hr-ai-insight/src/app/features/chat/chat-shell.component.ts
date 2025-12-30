@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 
 import { AppStore } from '../../store/app.store';
 import { ChatWindowComponent } from './components/chat-window/chat-window.component';
@@ -24,7 +24,7 @@ import { environment } from 'src/environments/environment';
       <div class="flex-1 flex overflow-hidden">
         <!-- Chat Area -->
         <main class="flex-1 flex flex-col overflow-hidden">
-          <ai-chat [config]="chatConfig" style="width: 100%; height: 100%;" />
+          <ai-chat [config]="chatConfig()" style="width: 100%; height: 100%;" />
         </main>
         
         <!-- Sidebar -->
@@ -49,25 +49,21 @@ export class ChatShellComponent {
   // Configuration to toggle sidebar visibility
   protected readonly showSidebar = false;
 
-  protected readonly chatConfig: AiChatConfig = {
+  protected readonly chatConfig = computed<AiChatConfig>(() => ({
     model: {
-      systemPrompt: 'You are a helpful assistant specialized in answering questions about HR policies.',
+      systemPrompt: this.store.getSystemPrompt(),
       apiKey: environment.cohereApiKey,
     },
     design: {
       mode: 'embedded',
-      width: '450px',
-      height: '650px',
-      isDarkMode: true
+      isDarkMode: this.store.theme() === 'dark',
     },
     chat: {
       title: 'HR Assistant',
-      startMessage: 'היי! איך אפשר לעזור לך היום?',
-      questionSuggestions: [
-        'How many vacation days do I have?',
-        'What is the dress code?',
-        'How do I report an absence?'
-      ]
+      startMessage: this.store.startMessage(),
+      questionSuggestions: this.store.suggestedQuestions(),
+      userPhoto: this.store.currentUser()?.imageUrl,
+      inputPlaceholder: 'שאל אותי משהו על אחד העובדים שלך...',
     }
-  };
+  }));
 }

@@ -17,7 +17,8 @@ import {
 } from '../models';
 import {
     AuthService,
-    CohereService
+    CohereService,
+    EmployeeDataService
 } from '../core/services';
 
 /**
@@ -40,6 +41,7 @@ interface AppStoreState {
     currentLoadingStep: number;
     error: string | null;
     theme: 'light' | 'dark';
+    startMessage: string;
 }
 
 /**
@@ -58,6 +60,7 @@ const initialState: AppStoreState = {
     currentLoadingStep: 0,
     error: null,
     theme: 'light',
+    startMessage: 'היי! איך אפשר לעזור לך היום?',
 };
 
 /**
@@ -101,11 +104,7 @@ export const AppStore = signalStore(
     withComputed((store) => ({
         suggestedQuestions: computed(() => {
             const employees = store.authorizedEmployees();
-            if (employees.length === 0) return [
-                'כמה ימי חופש נשארו לי?',
-                'מה המשכורת שלי?',
-                'מי המנהל שלי?'
-            ];
+            if (employees.length === 0) return [];
 
             const getRandom = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
             const questions: string[] = [];
@@ -144,6 +143,7 @@ export const AppStore = signalStore(
         // Inject services
         const authService = inject(AuthService);
         const cohereService = inject(CohereService);
+        const employeeDataService = inject(EmployeeDataService);
 
         // Helper to update loading step
         const updateLoadingStep = (stepIndex: number, completed: boolean = true) => {
@@ -193,11 +193,7 @@ export const AppStore = signalStore(
              */
             async initialize() {
                 // Initialize theme
-                if (store.theme() === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                document.documentElement.classList.toggle('dark', store.theme() === 'dark');
 
                 try {
                     patchState(store, { appState: 'loading-data' });
@@ -214,11 +210,7 @@ export const AppStore = signalStore(
                     });
 
                     // Update document class immediately so loading screen adapts
-                    if (theme === 'dark') {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
+                    document.documentElement.classList.toggle('dark', theme === 'dark');
 
                     // Step 2: Get Authorized Employees (Slower)
                     const employees = await authService.getAuthorizedEmployees();
@@ -233,9 +225,6 @@ export const AppStore = signalStore(
                     await delay(500);
 
                     const user = store.currentUser()!;
-                    const welcomeMsg = user.gender === 1
-                        ? `שלום ${user.firstName}! 👋\n\nאני העוזר החכם שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`
-                        : `שלום ${user.firstName}! 👋\n\nאני העוזרת החכמה שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.`;
 
                     // Generate list of example questions from the computed property
                     // Accessing computed property in method logic needs to be done carefully or just re-derived if strictly needed,
@@ -243,12 +232,11 @@ export const AppStore = signalStore(
                     // Actually, computed signals are available on the store object.
                     const questions = store.suggestedQuestions().slice(0, 3).map(q => `• "${q}"`).join('\n');
 
-                    addMessage({
-                        type: 'assistant',
-                        content: `${welcomeMsg}\n\nיש לי גישה לנתונים של **${store.authorizedEmployees().length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n${questions}\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
-                    });
+                    patchState(store, {
+                        appState: 'ready',
+                        startMessage: `שלום ${user.firstName}! 👋\n\nאני העוזרת החכמה שלך לניהול משאבי אנוש. אני כאן כדי לעזור לך עם נתוני ה${user.departmentName}.\n\nיש לי גישה לנתונים של **${store.authorizedEmployees().length}** עובדים מורשים.\n\nתוכל/י לשאול אותי שאלות כמו:\n${questions}\n\n🔒 כל המידע מאובטח ומוצג רק למורשים.`,
 
-                    patchState(store, { appState: 'ready' });
+                    });
 
                 } catch (error) {
                     patchState(store, {
@@ -256,6 +244,52 @@ export const AppStore = signalStore(
                         error: 'שגיאה באתחול המערכת. נסה לרענן את הדף.'
                     });
                 }
+            },
+
+            getSystemPrompt(): string {
+                const employeeList = store.authorizedEmployees().map(e =>
+                    `- שם: ${e.name}, כינוי: ${e.nickname}, מזהה: ${e.id || e.number}, מחלקה: ${e.departmentName}, תפקיד: ${e.roleName}, מגדר: ${e.gender === 1 ? 'זכר' : 'נקבה'}`
+                ).join('\n');
+
+                const genderInstruction = store.currentUser()!.gender === 1
+                    ? "פנה למשתמש בלשון זכר."
+                    : "פנה למשתמשת בלשון נקבה.";
+
+                return `אתה עוזר HR חכם בשם "HR Insight". 
+לפניך רשימה של עובדים מורשים. 
+
+המשתמש המחובר: ${store.currentUser()!.firstName} ${store.currentUser()!.lastName} (כינוי: ${store.currentUser()!.nickname}), מגדר: ${store.currentUser()!.gender === 1 ? 'זכר' : 'נקבה'}.
+${genderInstruction}
+
+רשימת עובדים:
+${employeeList}
+
+הנחיות:
+1. אם נשאלת שאלה על עובד ספציפי, השתמש בכלי "get_employee_detailed_data" כדי לקבל את כל המידע שלו.
+2. אל תנחש נתונים שאינם ברשימה לעיל.
+3. ענה תמיד בעברית בלבד. אל תשתמש במונחים טכניים באנגלית (כמו JSON field names).
+4. הצג את התשובה בצורה אנושית ונעימה ב-Markdown.
+5. חשוב: אם ישנם מספר עובדים עם אותו השם, היה אדיב ובקש מהמשתמש להבהיר למי הוא מתכוון. הצג לו רשימה של האפשרויות עם הכינוי ומספר העובד של כל אחד.
+6. אל תמציא נתונים, אם אין לך את המידע המתאים, תגיד לו כך`;
+            },
+
+            getTools(): any[] {
+                return [
+                    {
+                        name: "get_employee_detailed_data",
+                        description: "מתקשר למערכת ה-HR כדי לקבל נתונים מפורטים (שכר, חופשות, ביצועים) עבור עובד ספציפי לפי מזהה.",
+                        parameter_definitions: {
+                            employee_id: {
+                                description: "המזהה הייחודי (ID) של העובד",
+                                type: "str",
+                                required: true
+                            }
+                        },
+                        handler: async (employee_id: string) => {
+                            return await employeeDataService.getEmployeeData(employee_id);
+                        }
+                    }
+                ];
             },
 
             /**

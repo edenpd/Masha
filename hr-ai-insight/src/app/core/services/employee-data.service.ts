@@ -200,7 +200,7 @@ export class EmployeeDataService {
     async getEmployeeData(employeeId: string): Promise<EmployeeData | null> {
         // Simulate API delay
         await this.delay(500);
-
+        debugger;
         return this.employeeDataMap[employeeId] || null;
     }
 
