@@ -195,7 +195,7 @@ export const AiChatStore = signalStore(
                     error: (err: any) => {
                         if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort')) return;
                         console.error('[AiChatStore] Chat Error:', err);
-                        appendToAssistantMsg(assistantMsgId, '\n[Error]');
+                        appendToAssistantMsg(assistantMsgId, '\n❌ אירעה שגיאה בעיבוד הבקשה. נסה שוב.');
                         updateAssistantMsg(assistantMsgId, { isTyping: false });
                         patchState(store, { isProcessing: false });
                     },
