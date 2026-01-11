@@ -1,0 +1,1006 @@
+// ========================================
+// ארכיטקטורה מומלצת ל-Cohere Chat - HR Manager
+// עבור 50+ נושאים
+// ========================================
+
+// =====================================
+// 1. הגדרת Types
+// =====================================
+
+interface User {
+  name: string;
+  gender: string;
+  photo?: string;
+}
+
+interface Employee {
+  number: string;
+  name: string;
+  nickname?: string;
+  gender: string;
+  role: string;
+  division: string;
+  department: string;
+  branch: string;
+}
+
+interface Topic {
+  id: string;           // vacation, illness, personal_info
+  description_he: string; // ימי חופשה, ימי מחלה, פרטים אישיים
+  category?: string;    // time_off, personal, training (אופציונלי - לקיבוץ)
+}
+
+interface SystemLink {
+  name: string;
+  tags: string[];
+  url: string;
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+  name?: string;
+}
+
+interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+// =====================================
+// 2. הגדרת Tools - גישה אופטימלית
+// =====================================
+
+function createOptimizedTools(topics: Topic[]): any[] {
+  return [
+    // Tool 1: קבלת מידע על עובדים
+    {
+      type: 'function',
+      function: {
+        name: 'get_employee_data',
+        description: `מקבל מידע על עובד/ים לפי נושא ספציפי מהמערכת. 
+        
+        שימושים:
+        - לקבל מידע על עובד ספציפי: employee_numbers = "12345"
+        - לקבל מידע על כמה עובדים: employee_numbers = "12345,67890,11111"
+        - לקבל מידע על כל העובדים: employee_numbers = "*"
+        
+        הנושאים הזמינים מפורטים ב-system prompt.`,
+        parameters: {
+          type: 'object',
+          properties: {
+            employee_numbers: {
+              type: 'string',
+              description: 'מספרי עובדים מופרדים בפסיקים (לדוגמה: "12345,67890") או "*" עבור כל העובדים',
+              examples: ['12345', '12345,67890', '*']
+            },
+            topic_id: {
+              type: 'string',
+              description: 'מזהה הנושא באנגלית - בדוק ברשימת הנושאים הזמינים',
+              // שימוש ב-enum מאלץ את המודל לבחור רק מהרשימה
+              enum: topics.map(t => t.id)
+            },
+            reasoning: {
+              type: 'string',
+              description: 'הסבר קצר למה בחרת בנושא הזה (עוזר למודל להיות מדויק יותר)'
+            }
+          },
+          required: ['employee_numbers', 'topic_id']
+        }
+      }
+    },
+
+    // Tool 2: חיפוש עובדים
+    {
+      type: 'function',
+      function: {
+        name: 'search_employees',
+        description: `חיפוש עובדים לפי קריטריונים שונים. 
+        
+        שימושים:
+        - למצוא עובד לפי שם: name = "דוד לוי"
+        - למצוא עובדים ממחלקה: department = "כלכלה"
+        - למצוא עובדים לפי תפקיד: role = "מנהל"
+        - שילוב: name = "דוד", department = "כלכלה"
+        
+        מחזיר רשימת מספרי עובדים שעונים לקריטריונים.`,
+        parameters: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'שם העובד או חלק משמו (חיפוש חלקי)'
+            },
+            department: {
+              type: 'string',
+              description: 'שם המחלקה'
+            },
+            division: {
+              type: 'string',
+              description: 'שם החטיבה'
+            },
+            branch: {
+              type: 'string',
+              description: 'שם הענף'
+            },
+            role: {
+              type: 'string',
+              description: 'תפקיד העובד'
+            }
+          },
+          additionalProperties: false
+        }
+      }
+    },
+
+    // Tool 3: קבלת קישור למערכת
+    {
+      type: 'function',
+      function: {
+        name: 'get_system_link',
+        description: 'מקבל קישור למערכת או כלי ספציפי. חפש לפי שם המערכת או מילות תיוג רלוונטיות.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'שם המערכת או מילת חיפוש (לדוגמה: "שעון נוכחות", "משכורת", "חופשות")'
+            }
+          },
+          required: ['query']
+        }
+      }
+    }
+  ];
+}
+
+// =====================================
+// 3. יצירת System Prompt אופטימלי
+// =====================================
+
+function createSystemPrompt(
+  user: User,
+  employees: Employee[],
+  topics: Topic[],
+  systems: SystemLink[]
+): string {
+  
+  // קיבוץ נושאים לפי קטגוריות (אם קיימות) לקריאות טובה יותר
+  const topicsByCategory = groupTopicsByCategory(topics);
+  
+  return `אתה עוזר AI חכם ומקצועי למנהל משאבי אנוש. 
+תפקידך לעזור למנהל לקבל מידע מדויק על העובדים המורשים לו.
+
+## 👤 משתמש מחובר
+שם: ${user.name}
+מין: ${user.gender}
+
+## 👥 עובדים מורשים
+יש לך גישה ל-${employees.length} עובדים.
+
+מחלקות זמינות: ${getUniqueDepartments(employees).join(', ')}
+חטיבות זמינות: ${getUniqueDivisions(employees).join(', ')}
+
+📝 **חשוב**: השתמש ב-tool 'search_employees' כדי למצוא עובדים ספציפיים.
+אל תנסה לזכור את כל העובדים - תמיד חפש!
+
+${renderTopicsList(topicsByCategory)}
+
+## 🔗 מערכות זמינות
+${systems.map(s => `- **${s.name}**: ${s.tags.join(', ')}`).join('\n')}
+
+## 📋 כללי עבודה
+
+### 1️⃣ זיהוי עובדים
+- **ALWAYS** השתמש ב-search_employees לפני get_employee_data
+- אם נמצא עובד אחד - השתמש במספר שלו
+- אם נמצאו מספר עובדים באותו שם - שאל הבהרה והצג:
+  * מספר עובד
+  * כינוי (אם יש)
+  * מחלקה/תפקיד
+- אם לא נמצא עובד - הודע שהעובד לא קיים או לא מורשה
+
+### 2️⃣ זיהוי נושאים
+- קרא את שאלת המשתמש בעיון
+- זהה את הנושא הכי רלוונטי מרשימת הנושאים הזמינים
+- **חובה**: השתמש ב-reasoning parameter כדי להסביר את הבחירה שלך
+- אם הנושא לא קיים - הודע למשתמש בצורה ידידותית
+
+דוגמאות לזיהוי:
+- "כמה ימי חופש" → vacation
+- "מה המשכורת" → salary
+- "אילו קורסים עשה" → courses
+- "מה הטלפון" → contact או personal_info (תלוי מה זמין)
+
+### 3️⃣ טיפול בשאלות מורכבות
+
+**עובדים מרובים:**
+\`\`\`
+שאלה: "מה ימי החופש של דוד ומשה?"
+→ search_employees(name: "דוד") 
+→ search_employees(name: "משה")
+→ get_employee_data(employee_numbers: "12345,67890", topic_id: "vacation")
+\`\`\`
+
+**כל העובדים:**
+\`\`\`
+שאלה: "לכמה עובדים יש יותר מ-50 ימי חופש?"
+→ get_employee_data(employee_numbers: "*", topic_id: "vacation")
+→ נתח את התוצאות וספור
+\`\`\`
+
+**עובדים ממחלקה:**
+\`\`\`
+שאלה: "כמה עובדים מהכלכלה יש להם יותר מ-50 ימי חופש?"
+→ search_employees(department: "כלכלה")
+→ get_employee_data(employee_numbers: "רשימת המספרים", topic_id: "vacation")
+→ נתח וספור
+\`\`\`
+
+**מספר נושאים:**
+\`\`\`
+שאלה: "מה ימי החופש והמשכורת של דוד?"
+→ search_employees(name: "דוד")
+→ get_employee_data(employee_numbers: "12345", topic_id: "vacation")
+→ get_employee_data(employee_numbers: "12345", topic_id: "salary")
+→ שלב את התוצאות בתשובה אחת
+\`\`\`
+
+### 4️⃣ קישורים למערכות
+- השתמש ב-get_system_link עם מילות חיפוש רלוונטיות
+- הצג קישורים בפורמט Markdown: [שם המערכת](URL)
+- אם לא נמצא - הצע מערכות דומות
+
+### 5️⃣ טיפול באי-בהירות
+אל תנחש! תמיד שאל הבהרה:
+- "כמה ימי חופש יש?" → "האם אתה מתכוון לכל העובדים או לעובד ספציפי?"
+- "מה המשכורת?" → "של איזה עובד?"
+- שאלה מעורפלת → בקש פרטים נוספים
+
+### 6️⃣ פורמט תשובות
+- השתמש ב-Markdown לעיצוב ברור
+- **כותרות** למבנה
+- **טבלאות** למספר עובדים:
+
+| שם | מספר עובד | ימי חופש |
+|-----|-----------|----------|
+| דוד לוי | 12345 | 25 |
+| משה כהן | 67890 | 32 |
+
+- **רשימות** לנתונים מרובים
+- שמור על טון ידידותי ומקצועי
+
+### 7️⃣ הקשר שיחה
+- זכור שמות, מספרים ונושאים מהשיחה
+- תמוך בשאלות המשך:
+  * "ומה לגבי ימי מחלה שלו?" (אחרי שאלה על דוד)
+  * "תציג גם את המשכורת" (הוספה לשאלה קודמת)
+
+### 8️⃣ טיפול בשגיאות
+- אם השירות החזיר שגיאה - הסבר בצורה ברורה
+- אם אין מידע - אל תמציא! הודע שאין מידע זמין
+- הצע חלופות אם אפשר
+
+## ✅ דוגמאות לתהליך עבודה נכון
+
+**דוגמה 1: שאלה פשוטה**
+\`\`\`
+👤 משתמש: כמה ימי חופש יש לדוד לוי?
+
+🤖 תהליך:
+1. search_employees(name: "דוד לוי")
+   → נמצא: 12345 - דוד לוי, כלכלה
+2. get_employee_data(
+     employee_numbers: "12345",
+     topic_id: "vacation",
+     reasoning: "המשתמש שאל על ימי חופש"
+   )
+   → תוצאה: 25 ימים
+3. תשובה: "לדוד לוי (מספר עובד 12345) יש 25 ימי חופש."
+\`\`\`
+
+**דוגמה 2: שמות כפולים**
+\`\`\`
+👤 משתמש: מה המשכורת של משה כהן?
+
+🤖 תהליך:
+1. search_employees(name: "משה כהן")
+   → נמצאו 3 עובדים!
+2. תשובה מיידית:
+   "נמצאו 3 עובדים בשם משה כהן:
+   1. מספר 11111 - משה כהן (כהן א'), מחלקת IT
+   2. מספר 22222 - משה כהן, מחלקת כלכלה  
+   3. מספר 33333 - משה כהן (כהן ב'), מחלקת משאבי אנוש
+   
+   על איזה משה כהן אתה מתכוון?"
+\`\`\`
+
+**דוגמה 3: שאלה על כולם**
+\`\`\`
+👤 משתמש: לכמה עובדים יש יותר מ-50 ימי חופש?
+
+🤖 תהליך:
+1. get_employee_data(
+     employee_numbers: "*",
+     topic_id: "vacation",
+     reasoning: "שאלה סטטיסטית על כל העובדים"
+   )
+   → תוצאה: JSON עם כל העובדים
+2. נתח את הנתונים וספור
+3. תשובה: "נמצאו 12 עובדים עם יותר מ-50 ימי חופש:
+   
+   | שם | מספר עובד | ימי חופש |
+   |-----|-----------|----------|
+   | דוד לוי | 12345 | 52 |
+   | משה כהן | 67890 | 55 |
+   ..."
+\`\`\`
+
+## 🎯 עקרונות מנחים
+1. **דיוק > מהירות** - תמיד ודא שאתה עובד עם המספרים הנכונים
+2. **שקיפות** - הסבר את ההיגיון שלך בשדה reasoning
+3. **אמפתיה** - שמור על טון ידידותי גם בשגיאות
+4. **יעילות** - אל תבצע קריאות מיותרות
+
+זכור: אתה כאן כדי לעזור למנהל לקבל החלטות טובות יותר. תהיה מדויק, ברור וידידותי! 🎉`;
+}
+
+// =====================================
+// 4. פונקציות עזר ל-System Prompt
+// =====================================
+
+function groupTopicsByCategory(topics: Topic[]): Map<string, Topic[]> {
+  const grouped = new Map<string, Topic[]>();
+  
+  for (const topic of topics) {
+    const category = topic.category || 'כללי';
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+    grouped.get(category)!.push(topic);
+  }
+  
+  return grouped;
+}
+
+function renderTopicsList(grouped: Map<string, Topic[]>): string {
+  let output = '## 📚 נושאים זמינים\n\n';
+  
+  if (grouped.size === 1 && grouped.has('כללי')) {
+    // אין קטגוריות - רשימה שטוחה
+    const topics = grouped.get('כללי')!;
+    output += 'הנושאים הזמינים (השתמש במזהה האנגלי ב-topic_id):\n\n';
+    
+    // חלק ל-3 עמודות לקריאות טובה יותר
+    const chunks = chunkArray(topics, Math.ceil(topics.length / 3));
+    output += '| נושא | מזהה (topic_id) |\n';
+    output += '|------|----------------|\n';
+    
+    for (const topic of topics) {
+      output += `| ${topic.description_he} | \`${topic.id}\` |\n`;
+    }
+  } else {
+    // יש קטגוריות
+    for (const [category, topics] of grouped) {
+      output += `### ${category}\n`;
+      for (const topic of topics) {
+        output += `- **${topic.description_he}**: \`${topic.id}\`\n`;
+      }
+      output += '\n';
+    }
+  }
+  
+  output += '\n💡 **טיפ**: אם לא בטוח באיזה נושא להשתמש, השתמש ב-reasoning parameter כדי להסביר את הבחירה שלך.\n';
+  
+  return output;
+}
+
+function getUniqueDepartments(employees: Employee[]): string[] {
+  return [...new Set(employees.map(e => e.department))].sort();
+}
+
+function getUniqueDivisions(employees: Employee[]): string[] {
+  return [...new Set(employees.map(e => e.division))].sort();
+}
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
+// =====================================
+// 5. Angular Service - מימוש מלא
+// =====================================
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import OpenAI from 'openai';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CohereHRChatService {
+  private openai: OpenAI;
+  private messages: ChatMessage[] = [];
+  private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
+  
+  // Cache לנתונים שלא משתנים
+  private user!: User;
+  private employees: Employee[] = [];
+  private topics: Topic[] = [];
+  private systems: SystemLink[] = [];
+  
+  // Cache לתוצאות שירותים (אופציונלי)
+  private serviceCache = new Map<string, any>();
+  
+  constructor(private http: HttpClient) {
+    this.openai = new OpenAI({
+      baseURL: 'https://api.cohere.com/v1',
+      apiKey: 'YOUR_COHERE_API_KEY',
+      dangerouslyAllowBrowser: true // רק לפיתוח - בפרודקשן דרך Backend!
+    });
+  }
+
+  // =====================================
+  // אתחול - טעינת כל הנתונים
+  // =====================================
+  
+  async initialize(): Promise<void> {
+    try {
+      // טען את כל הנתונים במקביל
+      const [user, employees, topics, systems] = await Promise.all([
+        this.loadCurrentUser(),
+        this.loadAuthorizedEmployees(),
+        this.loadAvailableTopics(),
+        this.loadSystemLinks()
+      ]);
+      
+      this.user = user;
+      this.employees = employees;
+      this.topics = topics;
+      this.systems = systems;
+      
+      // צור system prompt
+      const systemPrompt = createSystemPrompt(
+        this.user,
+        this.employees,
+        this.topics,
+        this.systems
+      );
+      
+      // הוסף system message
+      this.messages = [{
+        role: 'system',
+        content: systemPrompt
+      }];
+      
+      console.log('✅ Chat initialized successfully');
+      console.log(`📊 ${employees.length} employees, ${topics.length} topics, ${systems.length} systems`);
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize chat:', error);
+      throw error;
+    }
+  }
+
+  // =====================================
+  // שליחת הודעה - הלב של המערכת
+  // =====================================
+  
+  async sendMessage(userMessage: string): Promise<string> {
+    // הוסף הודעת משתמש
+    this.addMessage({
+      role: 'user',
+      content: userMessage
+    });
+    
+    let finalResponse = '';
+    let iterationCount = 0;
+    const maxIterations = 10; // מגבלה למניעת לולאות אינסופיות
+    
+    while (iterationCount < maxIterations) {
+      iterationCount++;
+      
+      try {
+        // קריאה ל-Cohere
+        const response = await this.openai.chat.completions.create({
+          model: 'command-r-03-2025',
+          messages: this.messages as any,
+          tools: createOptimizedTools(this.topics),
+          tool_choice: 'auto',
+          temperature: 0.3, // נמוך יותר לדיוק גבוה יותר
+          max_tokens: 2000
+        });
+        
+        const choice = response.choices[0];
+        
+        // המודל רוצה לקרוא ל-tools
+        if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
+          console.log(`🔧 Tool calls requested (iteration ${iterationCount}):`, 
+            choice.message.tool_calls.map(tc => tc.function.name));
+          
+          // הוסף את הודעת המודל
+          this.addMessage(choice.message as ChatMessage);
+          
+          // בצע את כל ה-tool calls במקביל
+          const toolResults = await Promise.all(
+            choice.message.tool_calls.map(toolCall => this.executeToolCall(toolCall))
+          );
+          
+          // הוסף את התוצאות
+          for (let i = 0; i < choice.message.tool_calls.length; i++) {
+            this.addMessage({
+              role: 'tool',
+              content: JSON.stringify(toolResults[i], null, 2),
+              tool_call_id: choice.message.tool_calls[i].id,
+              name: choice.message.tool_calls[i].function.name
+            });
+          }
+          
+          // המשך ללולאה - המודל יקבל את התוצאות ויחליט מה הלאה
+          continue;
+        }
+        
+        // המודל סיים - יש תשובה סופית
+        if (choice.message.content) {
+          finalResponse = choice.message.content;
+          this.addMessage({
+            role: 'assistant',
+            content: finalResponse
+          });
+          
+          console.log(`✅ Final response received (${iterationCount} iterations)`);
+          break;
+        }
+        
+        // אם אין content ואין tool_calls - משהו לא בסדר
+        console.warn('⚠️ No content or tool_calls in response');
+        break;
+        
+      } catch (error) {
+        console.error('❌ Error in chat completion:', error);
+        throw error;
+      }
+    }
+    
+    if (iterationCount >= maxIterations) {
+      console.warn('⚠️ Max iterations reached');
+      finalResponse = 'מצטער, הגעתי למגבלת הפעולות. אנא נסה לנסח את השאלה מחדש.';
+    }
+    
+    this.messagesSubject.next([...this.messages]);
+    return finalResponse;
+  }
+
+  // =====================================
+  // ביצוע Tool Calls
+  // =====================================
+  
+  private async executeToolCall(toolCall: ToolCall): Promise<any> {
+    const { name, arguments: argsStr } = toolCall.function;
+    
+    try {
+      const args = JSON.parse(argsStr);
+      console.log(`🔧 Executing ${name} with args:`, args);
+      
+      switch (name) {
+        case 'get_employee_data':
+          return await this.getEmployeeData(
+            args.employee_numbers,
+            args.topic_id,
+            args.reasoning
+          );
+        
+        case 'search_employees':
+          return this.searchEmployees(args);
+        
+        case 'get_system_link':
+          return this.getSystemLink(args.query);
+        
+        default:
+          return {
+            error: true,
+            message: `Unknown tool: ${name}`
+          };
+      }
+    } catch (error) {
+      console.error(`❌ Error executing ${name}:`, error);
+      return {
+        error: true,
+        message: `שגיאה בביצוע ${name}: ${error}`
+      };
+    }
+  }
+
+  // =====================================
+  // Tool 1: get_employee_data
+  // =====================================
+  
+  private async getEmployeeData(
+    employeeNumbers: string,
+    topicId: string,
+    reasoning?: string
+  ): Promise<any> {
+    console.log(`📊 Getting data for: ${employeeNumbers}, topic: ${topicId}`);
+    if (reasoning) console.log(`💭 Reasoning: ${reasoning}`);
+    
+    // 1. Validate topic exists
+    const topic = this.topics.find(t => t.id === topicId);
+    if (!topic) {
+      return {
+        error: true,
+        message: `הנושא "${topicId}" לא קיים ברשימת הנושאים הזמינים`,
+        available_topics: this.topics.map(t => ({ id: t.id, description: t.description_he }))
+      };
+    }
+    
+    // 2. Validate employee numbers (אלא אם זה "*")
+    if (employeeNumbers !== '*') {
+      const numbers = employeeNumbers.split(',').map(n => n.trim());
+      const invalidNumbers = numbers.filter(num => 
+        !this.employees.find(e => e.number === num)
+      );
+      
+      if (invalidNumbers.length > 0) {
+        return {
+          error: true,
+          message: `מספרי עובדים לא תקינים או לא מורשים: ${invalidNumbers.join(', ')}`,
+          hint: 'השתמש ב-search_employees כדי למצוא את מספר העובד הנכון'
+        };
+      }
+    }
+    
+    // 3. Check cache
+    const cacheKey = `${employeeNumbers}_${topicId}`;
+    if (this.serviceCache.has(cacheKey)) {
+      console.log('📦 Returning cached result');
+      return this.serviceCache.get(cacheKey);
+    }
+    
+    // 4. Call the generic service
+    try {
+      const result = await this.callGenericService(employeeNumbers, topicId);
+      
+      // Cache the result
+      this.serviceCache.set(cacheKey, result);
+      
+      return {
+        success: true,
+        topic: topic.description_he,
+        topic_id: topicId,
+        employee_numbers: employeeNumbers,
+        data: result
+      };
+      
+    } catch (error) {
+      return {
+        error: true,
+        message: 'שגיאה בקבלת המידע מהשרת',
+        details: error
+      };
+    }
+  }
+
+  // =====================================
+  // Tool 2: search_employees
+  // =====================================
+  
+  private searchEmployees(criteria: {
+    name?: string;
+    department?: string;
+    division?: string;
+    branch?: string;
+    role?: string;
+  }): any {
+    console.log('🔍 Searching employees with criteria:', criteria);
+    
+    let results = [...this.employees];
+    
+    // Filter by name (partial match, case insensitive)
+    if (criteria.name) {
+      const searchName = criteria.name.toLowerCase();
+      results = results.filter(e => 
+        e.name.toLowerCase().includes(searchName) ||
+        (e.nickname && e.nickname.toLowerCase().includes(searchName))
+      );
+    }
+    
+    // Filter by department
+    if (criteria.department) {
+      results = results.filter(e => 
+        e.department.toLowerCase() === criteria.department!.toLowerCase()
+      );
+    }
+    
+    // Filter by division
+    if (criteria.division) {
+      results = results.filter(e => 
+        e.division.toLowerCase() === criteria.division!.toLowerCase()
+      );
+    }
+    
+    // Filter by branch
+    if (criteria.branch) {
+      results = results.filter(e => 
+        e.branch.toLowerCase() === criteria.branch!.toLowerCase()
+      );
+    }
+    
+    // Filter by role
+    if (criteria.role) {
+      results = results.filter(e => 
+        e.role.toLowerCase().includes(criteria.role!.toLowerCase())
+      );
+    }
+    
+    console.log(`✅ Found ${results.length} employees`);
+    
+    return {
+      success: true,
+      count: results.length,
+      employees: results.map(e => ({
+        number: e.number,
+        name: e.name,
+        nickname: e.nickname,
+        department: e.department,
+        division: e.division,
+        branch: e.branch,
+        role: e.role
+      }))
+    };
+  }
+
+  // =====================================
+  // Tool 3: get_system_link
+  // =====================================
+  
+  private getSystemLink(query: string): any {
+    console.log(`🔗 Searching for system link: ${query}`);
+    
+    const searchQuery = query.toLowerCase();
+    
+    // חפש במערכות לפי שם או תגיות
+    const results = this.systems.filter(system => 
+      system.name.toLowerCase().includes(searchQuery) ||
+      system.tags.some(tag => tag.toLowerCase().includes(searchQuery))
+    );
+    
+    if (results.length === 0) {
+      return {
+        success: false,
+        message: `לא נמצאה מערכת עבור "${query}"`,
+        available_systems: this.systems.map(s => ({
+          name: s.name,
+          tags: s.tags
+        }))
+      };
+    }
+    
+    return {
+      success: true,
+      count: results.length,
+      systems: results.map(s => ({
+        name: s.name,
+        url: s.url,
+        tags: s.tags
+      }))
+    };
+  }
+
+  // =====================================
+  // קריאה לשירות הגנרי (Backend)
+  // =====================================
+  
+  private async callGenericService(
+    employeeNumbers: string,
+    topicId: string
+  ): Promise<any> {
+    // זוהי הקריאה בפועל לשרת שלך
+    const url = '/api/hr/employee-data'; // התאם לנתיב שלך
+    
+    const response = await firstValueFrom(
+      this.http.post(url, {
+        employee_numbers: employeeNumbers,
+        topic_id: topicId
+      })
+    );
+    
+    return response;
+  }
+
+  // =====================================
+  // טעינת נתונים ראשוניים
+  // =====================================
+  
+  private async loadCurrentUser(): Promise<User> {
+    return firstValueFrom(this.http.get<User>('/api/auth/current-user'));
+  }
+  
+  private async loadAuthorizedEmployees(): Promise<Employee[]> {
+    return firstValueFrom(this.http.get<Employee[]>('/api/hr/authorized-employees'));
+  }
+  
+  private async loadAvailableTopics(): Promise<Topic[]> {
+    return firstValueFrom(this.http.get<Topic[]>('/api/hr/topics'));
+  }
+  
+  private async loadSystemLinks(): Promise<SystemLink[]> {
+    return firstValueFrom(this.http.get<SystemLink[]>('/api/systems/links'));
+  }
+
+  // =====================================
+  // ניהול הודעות
+  // =====================================
+  
+  private addMessage(message: ChatMessage): void {
+    this.messages.push(message);
+  }
+  
+  getMessages(): Observable<ChatMessage[]> {
+    return this.messagesSubject.asObservable();
+  }
+  
+  clearHistory(): void {
+    // שמור רק את system message
+    this.messages = [this.messages[0]];
+    this.messagesSubject.next([...this.messages]);
+    this.serviceCache.clear();
+  }
+  
+  // =====================================
+  // Streaming (אופציונלי)
+  // =====================================
+  
+  async sendMessageStreaming(
+    userMessage: string,
+    onChunk: (chunk: string) => void
+  ): Promise<void> {
+    this.addMessage({
+      role: 'user',
+      content: userMessage
+    });
+    
+    const stream = await this.openai.chat.completions.create({
+      model: 'command-r-03-2025',
+      messages: this.messages as any,
+      tools: createOptimizedTools(this.topics),
+      stream: true,
+      temperature: 0.3
+    });
+    
+    let fullResponse = '';
+    
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullResponse += delta;
+        onChunk(delta);
+      }
+    }
+    
+    this.addMessage({
+      role: 'assistant',
+      content: fullResponse
+    });
+    
+    this.messagesSubject.next([...this.messages]);
+  }
+}
+
+// =====================================
+// 6. דוגמת שימוש בקומפוננטה
+// =====================================
+
+/*
+@Component({
+  selector: 'app-hr-chat',
+  template: `
+    <div class="chat-container">
+      <div class="messages">
+        <div *ngFor="let msg of messages$ | async" 
+             [class]="'message ' + msg.role">
+          <div [innerHTML]="formatMessage(msg.content)"></div>
+        </div>
+      </div>
+      
+      <div class="input-area">
+        <input 
+          [(ngModel)]="userInput"
+          (keyup.enter)="sendMessage()"
+          placeholder="שאל שאלה על העובדים..."
+          [disabled]="isLoading"
+        />
+        <button 
+          (click)="sendMessage()"
+          [disabled]="isLoading || !userInput"
+        >
+          שלח
+        </button>
+      </div>
+      
+      <div *ngIf="isLoading" class="loading">
+        המודל עובד על התשובה...
+      </div>
+    </div>
+  `
+})
+export class HRChatComponent implements OnInit {
+  messages$: Observable<ChatMessage[]>;
+  userInput = '';
+  isLoading = false;
+  
+  constructor(private chatService: CohereHRChatService) {
+    this.messages$ = this.chatService.getMessages();
+  }
+  
+  async ngOnInit() {
+    await this.chatService.initialize();
+  }
+  
+  async sendMessage() {
+    if (!this.userInput.trim()) return;
+    
+    this.isLoading = true;
+    const message = this.userInput;
+    this.userInput = '';
+    
+    try {
+      await this.chatService.sendMessage(message);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+  
+  formatMessage(content: string): string {
+    // המר Markdown ל-HTML
+    return marked.parse(content);
+  }
+}
+*/
+
+// =====================================
+// 7. טיפים לאופטימיזציה
+// =====================================
+
+/*
+💡 PERFORMANCE TIPS:
+
+1. **Context Management עם 50+ נושאים:**
+   - אם ה-system prompt ארוך מדי (>8000 tokens), שקול:
+     * לשלוח רק את הקטגוריות בפעם הראשונה
+     * להוסיף נושאים ספציפיים רק כשהמשתמש שואל עליהם
+   
+2. **Caching חכם:**
+   - שמור תוצאות לשאילתות על "*" (כל העובדים)
+   - נקה cache אחרי 5 דקות
+   - השתמש ב-LRU cache אם יש הרבה שאילתות
+
+3. **Parallel Processing:**
+   - בצע tool calls במקביל (Promise.all)
+   - אם יש כמה עובדים - קרא לכולם במקביל
+
+4. **Error Recovery:**
+   - אם המודל בוחר topic_id שגוי, החזר לו רשימה של נושאים דומים
+   - אם search_employees מחזיר יותר מ-10 תוצאות, בקש מהמודל לצמצם
+
+5. **Monitoring:**
+   - עקוב אחרי כמה iterations לוקח כל שאלה
+   - עקוב אחרי topic_id שגויים - אולי צריך לשפר את ה-prompt
+
+6. **Testing:**
+   - בדוק עם שאלות מורכבות:
+     * "כמה עובדים מהכלכלה והמכירות ביחד יש להם יותר מ-50 ימי חופש וקורס בניהול?"
+     * זה ידרוש: search x2, get_employee_data x2, analysis
+*/
